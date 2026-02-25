@@ -107,7 +107,7 @@ def get_students():
     })
 
 
-# ---------------- ADMIN LOGIN PAGE ---------------- #
+# ---------------- ADMIN LOGIN ---------------- #
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
@@ -126,7 +126,7 @@ def admin():
 
 @app.route("/upload", methods=["POST"])
 def upload_excel():
-    file = request.files["file"]
+    file = request.files.get("file")
 
     if file:
         df = pd.read_excel(file)
@@ -134,7 +134,7 @@ def upload_excel():
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
 
-        # DELETE OLD DATA (Option A)
+        # Delete old data (Option A - Replace All)
         cursor.execute("DELETE FROM students")
 
         for _, row in df.iterrows():
@@ -168,5 +168,8 @@ def upload_excel():
     return redirect("/")
 
 
+# ---------------- RENDER PRODUCTION RUN ---------------- #
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
