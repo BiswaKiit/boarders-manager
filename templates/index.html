@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boarders Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: 'Segoe UI';
+            background: linear-gradient(135deg,#1e3c72,#2a5298);
+            margin:0;
+            padding:15px;
+            color:white;
+        }
+
+        h2 {
+            text-align:center;
+            margin-bottom:20px;
+        }
+
+        .stats {
+            display:grid;
+            grid-template-columns: repeat(3,1fr);
+            gap:15px;
+            margin-bottom:20px;
+        }
+
+        .stat-card {
+            background:linear-gradient(135deg,#ff9966,#ff5e62);
+            padding:15px;
+            border-radius:15px;
+            text-align:center;
+            font-weight:bold;
+            cursor:pointer;
+            box-shadow:0 5px 15px rgba(0,0,0,0.3);
+            transition:0.3s;
+        }
+
+        .stat-card:hover {
+            transform:scale(1.05);
+        }
+
+        input {
+            width:100%;
+            padding:12px;
+            border-radius:10px;
+            border:none;
+            margin-bottom:20px;
+            font-size:16px;
+        }
+
+        .student-card {
+            background:white;
+            color:black;
+            padding:15px;
+            border-radius:15px;
+            margin-bottom:15px;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .label {
+            font-weight:bold;
+            color:#1e3c72;
+        }
+
+        /* Modal */
+        .modal {
+            display:none;
+            position:fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:rgba(0,0,0,0.6);
+            justify-content:center;
+            align-items:center;
+        }
+
+        .modal-content {
+            background:white;
+            color:black;
+            padding:20px;
+            border-radius:15px;
+            max-height:80%;
+            overflow:auto;
+            width:90%;
+        }
+
+        .close {
+            float:right;
+            font-weight:bold;
+            cursor:pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Boarders Manager Dashboard</h2>
+
+<div class="stats">
+    <div class="stat-card">
+        Occupied<br>
+        <span id="occupied">0</span>
+    </div>
+
+    <div class="stat-card" onclick="showVacantRooms()">
+        Vacant Rooms<br>
+        <span id="vacantRoom">0</span>
+    </div>
+
+    <div class="stat-card" onclick="showVacantBeds()">
+        Vacant Beds<br>
+        <span id="vacantBed">0</span>
+    </div>
+</div>
+
+<input type="text" id="search" placeholder="Search by Roll / Name / Room">
+
+<div id="students"></div>
+
+<!-- Popup -->
+<div id="popup" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closePopup()">X</span>
+        <div id="popupContent"></div>
+    </div>
+</div>
+
+<script>
+
+let allStudents = [];
+let vacantRooms = [];
+let vacantBeds = [];
+
+fetch("/students")
+.then(res => res.json())
+.then(data => {
+
+    document.getElementById("occupied").innerText = data.occupied;
+    document.getElementById("vacantRoom").innerText = data.vacant_rooms.length;
+    document.getElementById("vacantBed").innerText = data.vacant_beds.length;
+
+    allStudents = data.students;
+    vacantRooms = data.vacant_rooms;
+    vacantBeds = data.vacant_beds;
+
+    displayStudents(allStudents);
+});
+
+function displayStudents(students) {
+    const container = document.getElementById("students");
+    container.innerHTML = "";
+
+    students.forEach(s => {
+
+        const card = document.createElement("div");
+        card.className = "student-card";
+
+        card.innerHTML = `
+            <div><span class="label">Roll No:</span> ${s.roll}</div>
+            <div><span class="label">Name:</span> ${s.name}</div>
+            <div><span class="label">Student Contact:</span> ${s.student_contact}</div>
+            <div><span class="label">Room:</span> ${s.room}</div>
+            <div><span class="label">Room Type:</span> ${s.room_type}</div>
+            <div><span class="label">Year:</span> ${s.year}</div>
+            <div><span class="label">Branch:</span> ${s.branch}</div>
+            <div><span class="label">Parent Name:</span> ${s.parent_name}</div>
+            <div><span class="label">Parent Contact:</span> ${s.parent_contact}</div>
+            <div><span class="label">Parent Email:</span> ${s.parent_email}</div>
+            <div><span class="label">State:</span> ${s.state}</div>
+            <div><span class="label">Mentor Name:</span> ${s.mentor_name}</div>
+            <div><span class="label">Mentor Contact:</span> ${s.mentor_contact}</div>
+            <div><span class="label">Mentor Email:</span> ${s.mentor_email}</div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+document.getElementById("search").addEventListener("input", function() {
+    const value = this.value.toLowerCase();
+    const filtered = allStudents.filter(s =>
+        s.roll.toLowerCase().includes(value) ||
+        s.name.toLowerCase().includes(value) ||
+        s.room.toLowerCase().includes(value)
+    );
+    displayStudents(filtered);
+});
+
+function showVacantRooms() {
+    let html = "<h3>Vacant Rooms</h3>";
+    vacantRooms.forEach(r => {
+        html += `<div>Room: ${r.room} | Type: ${r.room_type}</div>`;
+    });
+    showPopup(html);
+}
+
+function showVacantBeds() {
+    let html = "<h3>Vacant Beds</h3>";
+    vacantBeds.forEach(r => {
+        html += `<div>Room: ${r.room} | Type: ${r.room_type}</div>`;
+    });
+    showPopup(html);
+}
+
+function showPopup(content) {
+    document.getElementById("popupContent").innerHTML = content;
+    document.getElementById("popup").style.display = "flex";
+}
+
+function closePopup() {
+    document.getElementById("popup").style.display = "none";
+}
+
+</script>
+
+</body>
+</html>
