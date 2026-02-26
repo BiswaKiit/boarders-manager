@@ -4,42 +4,68 @@
 <title>Boarders Manager</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2991/2991108.png">
+
 <style>
-body {
+body{
     font-family: Arial;
-    margin: 10px;
-    background: #f0f6ff;
+    margin:0;
+    background:linear-gradient(to bottom,#e6f0ff,#ffffff);
+    padding-bottom:80px;
 }
 
-h2 {
-    text-align: center;
-    color: #003366;
-}
-
-.search-box {
+h2{
     text-align:center;
-    margin-bottom:15px;
+    color:#003366;
+    padding:10px;
+}
+
+.search-box{
+    text-align:center;
+    padding:10px;
 }
 
 select,input,button{
     padding:8px;
     margin:5px;
-    border-radius:6px;
+    border-radius:8px;
     border:1px solid #ccc;
+    font-size:14px;
 }
 
 button{
     background:#007BFF;
     color:white;
     border:none;
+    cursor:pointer;
+}
+
+.dashboard{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    padding:10px;
+}
+
+.card-stat{
+    background:#ffffff;
+    padding:12px;
+    border-radius:12px;
+    text-align:center;
+    font-weight:bold;
+    box-shadow:0 3px 8px rgba(0,0,0,0.1);
+}
+
+.results{
+    padding:10px;
 }
 
 .card{
     background:white;
     padding:12px;
-    margin-bottom:10px;
-    border-radius:10px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom:12px;
+    border-radius:12px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 
 .label{
@@ -47,40 +73,24 @@ button{
     color:#0056b3;
 }
 
-.vacancy{
-    display:flex;
-    justify-content:space-around;
-    margin-bottom:15px;
-}
-
-.vac-card{
-    background:#ffeeba;
-    padding:10px;
-    border-radius:8px;
-    width:45%;
-    text-align:center;
-    font-weight:bold;
-}
-
 .footer{
     position:fixed;
     bottom:0;
-    left:0;
     width:100%;
     background:#003366;
     color:white;
     text-align:center;
-    padding:10px;
+    padding:12px;
+    font-weight:bold;
 }
 
 .footer a{
     background:#ffc107;
-    padding:6px 12px;
+    padding:6px 14px;
     margin-left:15px;
     border-radius:6px;
     text-decoration:none;
     color:black;
-    font-weight:bold;
 }
 </style>
 </head>
@@ -99,16 +109,19 @@ button{
 <option value="mentor">Mentor Name</option>
 </select>
 
-<input type="text" id="searchInput" placeholder="Type here">
+<input type="text" id="searchInput" placeholder="Type here"
+onkeypress="if(event.key==='Enter'){search();}">
 <button onclick="search()">Search</button>
 </div>
 
-<div class="vacancy">
-<div class="vac-card" id="vacRooms">Vacant Rooms: 0</div>
-<div class="vac-card" id="vacBeds">Vacant Beds: 0</div>
+<div class="dashboard">
+<div class="card-stat" id="totalStudents">Total Students: 0</div>
+<div class="card-stat" id="vacRooms">Vacant Rooms: 0</div>
+<div class="card-stat" id="vacBeds">Vacant Beds: 0</div>
+<div class="card-stat" id="yearStats">Year Stats</div>
 </div>
 
-<div id="results"></div>
+<div class="results" id="results"></div>
 
 <div class="footer">
 Created by: Biswa Ranjan Mishra
@@ -118,14 +131,27 @@ Created by: Biswa Ranjan Mishra
 <script>
 function search(){
 const searchBy=document.getElementById("searchBy").value;
-const query=document.getElementById("searchInput").value;
+const input=document.getElementById("searchInput");
+const query=input.value;
 
 fetch(`/students?search_by=${searchBy}&query=${query}`)
 .then(res=>res.json())
 .then(data=>{
 
-document.getElementById("vacRooms").innerText="Vacant Rooms: "+data.vacant_rooms.length;
-document.getElementById("vacBeds").innerText="Vacant Beds: "+data.vacant_beds.length;
+document.getElementById("vacRooms").innerText=
+"Vacant Rooms: "+data.vacant_rooms.length;
+
+document.getElementById("vacBeds").innerText=
+"Vacant Beds: "+data.vacant_beds.length;
+
+document.getElementById("totalStudents").innerText=
+"Total Students: "+data.total_students;
+
+let yearText="";
+for(let y in data.year_count){
+yearText+=y+": "+data.year_count[y]+" | ";
+}
+document.getElementById("yearStats").innerText=yearText;
 
 const container=document.getElementById("results");
 container.innerHTML="";
@@ -150,6 +176,8 @@ container.innerHTML+=`
 </div>
 `;
 });
+
+input.value="";
 });
 }
 
