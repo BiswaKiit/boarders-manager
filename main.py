@@ -9,7 +9,7 @@ DATABASE = "boarders.db"
 ADMIN_PASSWORD = "hostel@123"
 
 
-# ---------------- DATABASE SETUP ---------------- #
+# ---------------- DATABASE ---------------- #
 
 def init_db():
     conn = sqlite3.connect(DATABASE)
@@ -37,84 +37,92 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 init_db()
 
 
-# ---------------- PUBLIC DASHBOARD ---------------- #
+# ---------------- HOME ---------------- #
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
+# ---------------- SEARCH API ---------------- #
+
 @app.route("/students")
 def get_students():
+    search_by = request.args.get("search_by", "").lower()
+    query = request.args.get("query", "").lower()
+
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-
     cursor.execute("SELECT * FROM students")
     rows = cursor.fetchall()
     conn.close()
 
-    students = []
-    occupied = 0
-    vacant_rooms = []
-    vacant_beds = []
+    results = []
 
     for row in rows:
         student = {
-            "roll": row[0],
-            "name": row[1],
-            "student_contact": row[2],
-            "room": row[3],
-            "room_type": row[4],
-            "year": row[5],
-            "branch": row[6],
-            "parent_name": row[7],
-            "parent_contact": row[8],
-            "parent_email": row[9],
-            "state": row[10],
-            "mentor_name": row[11],
-            "mentor_contact": row[12],
-            "mentor_email": row[13],
+            "roll": row[0] or "",
+            "name": row[1] or "",
+            "student_contact": row[2] or "",
+            "room": row[3] or "",
+            "room_type": row[4] or "",
+            "year": row[5] or "",
+            "branch": row[6] or "",
+            "parent_name": row[7] or "",
+            "parent_contact": row[8] or "",
+            "parent_email": row[9] or "",
+            "state": row[10] or "",
+            "mentor_name": row[11] or "",
+            "mentor_contact": row[12] or "",
+            "mentor_email": row[13] or "",
         }
 
-        students.append(student)
+        match = True
 
-        upper_name = student["name"].upper()
+        if query:
+            match = False
 
-        if "VACANT ROOM" in upper_name:
-            vacant_rooms.append({
-                "room": student["room"],
-                "room_type": student["room_type"]
-            })
+            if search_by == "roll":
+                if query in student["roll"].lower():
+                    match = True
 
-        elif "BED VACANT" in upper_name:
-            vacant_beds.append({
-                "room": student["room"],
-                "room_type": student["room_type"]
-            })
+            elif search_by == "room":
+                if query in student["room"].lower():
+                    match = True
 
-        elif student["roll"]:
-            occupied += 1
+            elif search_by == "name":
+                if query in student["name"].lower():
+                    match = True
 
-    return jsonify({
-        "students": students,
-        "occupied": occupied,
-        "vacant_rooms": vacant_rooms,
-        "vacant_beds": vacant_beds
-    })
+            elif search_by == "mobile":
+                if (query in student["student_contact"].lower() or
+                    query in student["parent_contact"].lower() or
+                    query in student["mentor_contact"].lower()):
+                    match = True
+
+            elif search_by == "state":
+                if query in student["state"].lower():
+                    match = True
+
+            elif search_by == "mentor":
+                if query in student["mentor_name"].lower():
+                    match = True
+
+        if match:
+            results.append(student)
+
+    return jsonify(results)
 
 
-# ---------------- ADMIN LOGIN ---------------- #
+# ---------------- ADMIN ---------------- #
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     if request.method == "POST":
-        password = request.form.get("password")
-
-        if password == ADMIN_PASSWORD:
+        if request.form.get("password") == ADMIN_PASSWORD:
             return render_template("admin.html", authorized=True)
         else:
             return render_template("admin.html", authorized=False, error="Wrong Password")
@@ -122,7 +130,7 @@ def admin():
     return render_template("admin.html", authorized=False)
 
 
-# ---------------- EXCEL UPLOAD ---------------- #
+# ---------------- UPLOAD ---------------- #
 
 @app.route("/upload", methods=["POST"])
 def upload_excel():
@@ -134,32 +142,26 @@ def upload_excel():
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
 
-        # Delete old data (Option A - Replace All)
         cursor.execute("DELETE FROM students")
 
         for _, row in df.iterrows():
-
-            student_mobile = str(int(row["Student Mobile No"])) if pd.notna(row["Student Mobile No"]) else ""
-            mentor_mobile = str(int(row["Mobile No"])) if pd.notna(row["Mobile No"]) else ""
-            roll = str(int(row["Roll No"])) if pd.notna(row["Roll No"]) else ""
-
             cursor.execute("""
             INSERT INTO students VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
-                roll,
-                str(row["Student Name"]),
-                student_mobile,
-                str(row["Room No"]),
-                str(row["Room Type"]),
-                str(row["Year"]),
-                str(row["Branch"]),
-                str(row["Parent Name"]),
-                str(row["Parent Contact No"]),
-                str(row["Parent Email"]),
-                str(row["State"]),
-                str(row["Mentor Name"]),
-                mentor_mobile,
-                str(row["Mentor Email"]),
+                str(row.get("Roll No", "")),
+                str(row.get("Student Name", "")),
+                str(row.get("Student Mobile No", "")),
+                str(row.get("Room No", "")),
+                str(row.get("Room Type", "")),
+                str(row.get("Year", "")),
+                str(row.get("Branch", "")),
+                str(row.get("Parent Name", "")),
+                str(row.get("Parent Contact No", "")),
+                str(row.get("Parent Email", "")),
+                str(row.get("State", "")),
+                str(row.get("Mentor Name", "")),
+                str(row.get("Mobile No", "")),
+                str(row.get("Mentor Email", "")),
             ))
 
         conn.commit()
@@ -168,7 +170,7 @@ def upload_excel():
     return redirect("/")
 
 
-# ---------------- RENDER PRODUCTION RUN ---------------- #
+# ---------------- RENDER ---------------- #
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
