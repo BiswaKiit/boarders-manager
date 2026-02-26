@@ -1,107 +1,159 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Boarders Manager</title>
-    <style>
-        body { font-family: Arial; margin: 20px; }
+<title>Boarders Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-        select, input {
-            padding: 8px;
-            margin-right: 10px;
-        }
+<style>
+body {
+    font-family: Arial;
+    margin: 10px;
+    background: #f0f6ff;
+}
 
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-        }
+h2 {
+    text-align: center;
+    color: #003366;
+}
 
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px;
-            text-align: left;
-        }
+.search-box {
+    text-align:center;
+    margin-bottom:15px;
+}
 
-        th { background: #f2f2f2; }
+select,input,button{
+    padding:8px;
+    margin:5px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
 
-        .footer {
-            margin-top: 40px;
-            padding: 15px;
-            border-top: 4px solid #007BFF;
-            border-bottom: 4px solid #007BFF;
-            text-align: center;
-            font-weight: bold;
-        }
+button{
+    background:#007BFF;
+    color:white;
+    border:none;
+}
 
-        .admin-btn {
-            background: #007BFF;
-            color: white;
-            padding: 6px 12px;
-            text-decoration: none;
-            margin-left: 20px;
-            border-radius: 5px;
-        }
-    </style>
+.card{
+    background:white;
+    padding:12px;
+    margin-bottom:10px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.label{
+    font-weight:bold;
+    color:#0056b3;
+}
+
+.vacancy{
+    display:flex;
+    justify-content:space-around;
+    margin-bottom:15px;
+}
+
+.vac-card{
+    background:#ffeeba;
+    padding:10px;
+    border-radius:8px;
+    width:45%;
+    text-align:center;
+    font-weight:bold;
+}
+
+.footer{
+    position:fixed;
+    bottom:0;
+    left:0;
+    width:100%;
+    background:#003366;
+    color:white;
+    text-align:center;
+    padding:10px;
+}
+
+.footer a{
+    background:#ffc107;
+    padding:6px 12px;
+    margin-left:15px;
+    border-radius:6px;
+    text-decoration:none;
+    color:black;
+    font-weight:bold;
+}
+</style>
 </head>
+
 <body>
 
 <h2>Boarders Manager</h2>
 
+<div class="search-box">
 <select id="searchBy">
-    <option value="roll">Roll No</option>
-    <option value="room">Room No</option>
-    <option value="name">Student Name</option>
-    <option value="mobile">Mobile No</option>
-    <option value="state">State</option>
-    <option value="mentor">Mentor Name</option>
+<option value="roll">Roll No</option>
+<option value="room">Room No</option>
+<option value="name">Student Name</option>
+<option value="mobile">Mobile No</option>
+<option value="state">State</option>
+<option value="mentor">Mentor Name</option>
 </select>
 
-<input type="text" id="searchInput" placeholder="Type here...">
+<input type="text" id="searchInput" placeholder="Type here">
 <button onclick="search()">Search</button>
+</div>
 
-<table id="resultTable">
-    <thead>
-        <tr>
-            <th>Roll</th>
-            <th>Name</th>
-            <th>Room</th>
-            <th>Mobile</th>
-            <th>State</th>
-            <th>Mentor</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
+<div class="vacancy">
+<div class="vac-card" id="vacRooms">Vacant Rooms: 0</div>
+<div class="vac-card" id="vacBeds">Vacant Beds: 0</div>
+</div>
+
+<div id="results"></div>
 
 <div class="footer">
-    Created by: Biswa Ranjan Mishra
-    <a href="/admin" class="admin-btn">Admin</a>
+Created by: Biswa Ranjan Mishra
+<a href="/admin">Admin</a>
 </div>
 
 <script>
-function search() {
-    const searchBy = document.getElementById("searchBy").value;
-    const query = document.getElementById("searchInput").value;
+function search(){
+const searchBy=document.getElementById("searchBy").value;
+const query=document.getElementById("searchInput").value;
 
-    fetch(`/students?search_by=${searchBy}&query=${query}`)
-    .then(res => res.json())
-    .then(data => {
-        const tbody = document.querySelector("#resultTable tbody");
-        tbody.innerHTML = "";
+fetch(`/students?search_by=${searchBy}&query=${query}`)
+.then(res=>res.json())
+.then(data=>{
 
-        data.forEach(student => {
-            const row = `<tr>
-                <td>${student.roll}</td>
-                <td>${student.name}</td>
-                <td>${student.room}</td>
-                <td>${student.student_contact}</td>
-                <td>${student.state}</td>
-                <td>${student.mentor_name}</td>
-            </tr>`;
-            tbody.innerHTML += row;
-        });
-    });
+document.getElementById("vacRooms").innerText="Vacant Rooms: "+data.vacant_rooms.length;
+document.getElementById("vacBeds").innerText="Vacant Beds: "+data.vacant_beds.length;
+
+const container=document.getElementById("results");
+container.innerHTML="";
+
+data.students.forEach(s=>{
+container.innerHTML+=`
+<div class="card">
+<div><span class="label">Roll:</span> ${s.roll}</div>
+<div><span class="label">Name:</span> ${s.name}</div>
+<div><span class="label">Room:</span> ${s.room}</div>
+<div><span class="label">Room Type:</span> ${s.room_type}</div>
+<div><span class="label">Student Mobile:</span> ${s.student_contact}</div>
+<div><span class="label">Year:</span> ${s.year}</div>
+<div><span class="label">Branch:</span> ${s.branch}</div>
+<div><span class="label">Parent Name:</span> ${s.parent_name}</div>
+<div><span class="label">Parent Mobile:</span> ${s.parent_contact}</div>
+<div><span class="label">Parent Email:</span> ${s.parent_email}</div>
+<div><span class="label">State:</span> ${s.state}</div>
+<div><span class="label">Mentor Name:</span> ${s.mentor_name}</div>
+<div><span class="label">Mentor Mobile:</span> ${s.mentor_contact}</div>
+<div><span class="label">Mentor Email:</span> ${s.mentor_email}</div>
+</div>
+`;
+});
+});
 }
+
+search();
 </script>
 
 </body>
