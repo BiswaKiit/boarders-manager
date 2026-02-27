@@ -54,6 +54,7 @@ button{
     text-align:center;
     font-weight:bold;
     box-shadow:0 3px 8px rgba(0,0,0,0.1);
+    cursor:pointer;
 }
 
 .results{
@@ -92,6 +93,35 @@ button{
     text-decoration:none;
     color:black;
 }
+
+/* ===== POPUP MODAL ===== */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    width:80%;
+    max-height:70%;
+    overflow:auto;
+}
+
+.close-btn{
+    float:right;
+    cursor:pointer;
+    color:red;
+    font-weight:bold;
+}
 </style>
 </head>
 
@@ -128,7 +158,20 @@ Created by: Biswa Ranjan Mishra
 <a href="/admin">Admin</a>
 </div>
 
+<!-- ===== POPUP ===== -->
+<div class="modal" id="popupModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closePopup()">X</span>
+    <h3 id="popupTitle"></h3>
+    <div id="popupBody"></div>
+  </div>
+</div>
+
 <script>
+
+let vacantRoomsList = [];
+let vacantBedsList = [];
+
 function search(){
 const searchBy=document.getElementById("searchBy").value;
 const input=document.getElementById("searchInput");
@@ -138,20 +181,23 @@ fetch(`/students?search_by=${searchBy}&query=${query}`)
 .then(res=>res.json())
 .then(data=>{
 
-document.getElementById("vacRooms").innerText=
-"Vacant Rooms: "+data.vacant_rooms.length;
+vacantRoomsList = data.vacant_rooms;
+vacantBedsList = data.vacant_beds;
 
-document.getElementById("vacBeds").innerText=
-"Vacant Beds: "+data.vacant_beds.length;
+document.getElementById("vacRooms").innerText =
+"Vacant Rooms: " + vacantRoomsList.length;
 
-document.getElementById("totalStudents").innerText=
-"Total Students: "+data.total_students;
+document.getElementById("vacBeds").innerText =
+"Vacant Beds: " + vacantBedsList.length;
+
+document.getElementById("totalStudents").innerText =
+"Total Students: " + data.total_students;
 
 let yearText="";
 for(let y in data.year_count){
-yearText+=y+": "+data.year_count[y]+" | ";
+yearText += y + ": " + data.year_count[y] + " | ";
 }
-document.getElementById("yearStats").innerText=yearText;
+document.getElementById("yearStats").innerText = yearText;
 
 const container=document.getElementById("results");
 container.innerHTML="";
@@ -181,7 +227,32 @@ input.value="";
 });
 }
 
+function showPopup(title, list){
+document.getElementById("popupTitle").innerText = title;
+
+if(list.length === 0){
+document.getElementById("popupBody").innerHTML = "No data available";
+} else {
+document.getElementById("popupBody").innerHTML = list.join("<br>");
+}
+
+document.getElementById("popupModal").style.display="flex";
+}
+
+function closePopup(){
+document.getElementById("popupModal").style.display="none";
+}
+
+document.getElementById("vacRooms").onclick = function(){
+showPopup("Vacant Rooms", vacantRoomsList);
+};
+
+document.getElementById("vacBeds").onclick = function(){
+showPopup("Vacant Beds", vacantBedsList);
+};
+
 search();
+
 </script>
 
 </body>
