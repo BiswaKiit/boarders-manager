@@ -40,6 +40,7 @@ def init_db():
     cur.close()
     conn.close()
 
+
 init_db()
 
 
@@ -67,22 +68,22 @@ def get_students():
     year_count = {}
 
     for row in rows:
-        roll = str(row[0]).replace(".0","") if row[0] else ""
+        roll = str(row[0] or "").replace(".0", "")
 
         student = {
             "roll": roll,
             "name": row[1] or "",
-            "student_contact": str(row[2]).replace(".0","") if row[2] else "",
+            "student_contact": str(row[2] or "").replace(".0", ""),
             "room": row[3] or "",
             "room_type": row[4] or "",
             "year": row[5] or "",
             "branch": row[6] or "",
             "parent_name": row[7] or "",
-            "parent_contact": str(row[8]).replace(".0","") if row[8] else "",
+            "parent_contact": str(row[8] or "").replace(".0", ""),
             "parent_email": row[9] or "",
             "state": row[10] or "",
             "mentor_name": row[11] or "",
-            "mentor_contact": str(row[12]).replace(".0","") if row[12] else "",
+            "mentor_contact": str(row[12] or "").replace(".0", ""),
             "mentor_email": row[13] or "",
         }
 
@@ -108,9 +109,9 @@ def get_students():
             elif search_by == "name" and query in student["name"].lower():
                 match = True
             elif search_by == "mobile" and (
-                query in student["student_contact"].lower() or
-                query in student["parent_contact"].lower() or
-                query in student["mentor_contact"].lower()
+                query in student["student_contact"].lower()
+                or query in student["parent_contact"].lower()
+                or query in student["mentor_contact"].lower()
             ):
                 match = True
             elif search_by == "state" and query in student["state"].lower():
@@ -130,7 +131,7 @@ def get_students():
     })
 
 
-@app.route("/admin", methods=["GET","POST"])
+@app.route("/admin", methods=["GET", "POST"])
 def admin():
     if request.method == "POST":
         if request.form.get("password") == ADMIN_PASSWORD:
@@ -143,32 +144,40 @@ def admin():
 @app.route("/upload", methods=["POST"])
 def upload_excel():
     file = request.files.get("file")
+
     if file:
         df = pd.read_excel(file)
 
         conn = get_connection()
         cur = conn.cursor()
+
+        # Clear old data
         cur.execute("DELETE FROM students")
 
+        data = []
+
         for _, row in df.iterrows():
-            cur.execute("""
-            INSERT INTO students VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            """, (
-                str(row.get("Roll No","")).replace(".0",""),
-                str(row.get("Student Name","")),
-                str(row.get("Student Mobile No","")).replace(".0",""),
-                str(row.get("Room No","")),
-                str(row.get("Room Type","")),
-                str(row.get("Year","")),
-                str(row.get("Branch","")),
-                str(row.get("Parent Name","")),
-                str(row.get("Parent Contact No","")).replace(".0",""),
-                str(row.get("Parent Email","")),
-                str(row.get("State","")),
-                str(row.get("Mentor Name","")),
-                str(row.get("Mobile No","")).replace(".0",""),
-                str(row.get("Mentor Email","")),
+            data.append((
+                str(row.get("Roll No", "")).replace(".0", ""),
+                str(row.get("Student Name", "")),
+                str(row.get("Student Mobile No", "")).replace(".0", ""),
+                str(row.get("Room No", "")),
+                str(row.get("Room Type", "")),
+                str(row.get("Year", "")),
+                str(row.get("Branch", "")),
+                str(row.get("Parent Name", "")),
+                str(row.get("Parent Contact No", "")).replace(".0", ""),
+                str(row.get("Parent Email", "")),
+                str(row.get("State", "")),
+                str(row.get("Mentor Name", "")),
+                str(row.get("Mobile No", "")).replace(".0", ""),
+                str(row.get("Mentor Email", "")),
             ))
+
+        # Bulk insert (FAST)
+        cur.executemany("""
+        INSERT INTO students VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, data)
 
         conn.commit()
         cur.close()
