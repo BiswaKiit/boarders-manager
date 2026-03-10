@@ -56,6 +56,25 @@ def get_students():
 
     conn = get_connection()
     cur = conn.cursor()
+if query:
+    if search_by == "roll":
+        cur.execute("SELECT * FROM students WHERE LOWER(roll) LIKE %s", (f"%{query}%",))
+    elif search_by == "room":
+        cur.execute("SELECT * FROM students WHERE LOWER(room) LIKE %s", (f"%{query}%",))
+    elif search_by == "name":
+        cur.execute("SELECT * FROM students WHERE LOWER(name) LIKE %s", (f"%{query}%",))
+    elif search_by == "state":
+        cur.execute("SELECT * FROM students WHERE LOWER(state) LIKE %s", (f"%{query}%",))
+    elif search_by == "mentor":
+        cur.execute("SELECT * FROM students WHERE LOWER(mentor_name) LIKE %s", (f"%{query}%",))
+    elif search_by == "mobile":
+        cur.execute("""
+        SELECT * FROM students 
+        WHERE student_contact LIKE %s 
+        OR parent_contact LIKE %s 
+        OR mentor_contact LIKE %s
+        """, (f"%{query}%", f"%{query}%", f"%{query}%"))
+else:
     cur.execute("SELECT * FROM students")
     rows = cur.fetchall()
     cur.close()
@@ -93,10 +112,14 @@ def get_students():
             vacant_rooms.append(student["room"])
         elif "BED VACANT" in upper_name:
             vacant_beds.append(student["room"])
-        elif roll:
-            total_students += 1
-            year = student["year"]
-            year_count[year] = year_count.get(year, 0) + 1
+elif roll and roll.strip() and roll.lower() != "nan":
+
+    total_students += 1
+
+    year = student["year"]
+
+    if year and year.strip() and year.lower() != "nan":
+        year_count[year] = year_count.get(year, 0) + 1
 
         match = True
 
