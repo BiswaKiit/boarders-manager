@@ -51,32 +51,47 @@ def home():
 
 @app.route("/students")
 def get_students():
+
     search_by = request.args.get("search_by", "").lower()
     query = request.args.get("query", "").lower()
 
     conn = get_connection()
     cur = conn.cursor()
-if query:
-    if search_by == "roll":
-        cur.execute("SELECT * FROM students WHERE LOWER(roll) LIKE %s", (f"%{query}%",))
-    elif search_by == "room":
-        cur.execute("SELECT * FROM students WHERE LOWER(room) LIKE %s", (f"%{query}%",))
-    elif search_by == "name":
-        cur.execute("SELECT * FROM students WHERE LOWER(name) LIKE %s", (f"%{query}%",))
-    elif search_by == "state":
-        cur.execute("SELECT * FROM students WHERE LOWER(state) LIKE %s", (f"%{query}%",))
-    elif search_by == "mentor":
-        cur.execute("SELECT * FROM students WHERE LOWER(mentor_name) LIKE %s", (f"%{query}%",))
-    elif search_by == "mobile":
-        cur.execute("""
-        SELECT * FROM students 
-        WHERE student_contact LIKE %s 
-        OR parent_contact LIKE %s 
-        OR mentor_contact LIKE %s
-        """, (f"%{query}%", f"%{query}%", f"%{query}%"))
-else:
-    cur.execute("SELECT * FROM students")
+
+    # FAST DATABASE SEARCH
+    if query:
+
+        if search_by == "roll":
+            cur.execute("SELECT * FROM students WHERE LOWER(roll) LIKE %s", (f"%{query}%",))
+
+        elif search_by == "room":
+            cur.execute("SELECT * FROM students WHERE LOWER(room) LIKE %s", (f"%{query}%",))
+
+        elif search_by == "name":
+            cur.execute("SELECT * FROM students WHERE LOWER(name) LIKE %s", (f"%{query}%",))
+
+        elif search_by == "state":
+            cur.execute("SELECT * FROM students WHERE LOWER(state) LIKE %s", (f"%{query}%",))
+
+        elif search_by == "mentor":
+            cur.execute("SELECT * FROM students WHERE LOWER(mentor_name) LIKE %s", (f"%{query}%",))
+
+        elif search_by == "mobile":
+            cur.execute("""
+            SELECT * FROM students
+            WHERE student_contact LIKE %s
+            OR parent_contact LIKE %s
+            OR mentor_contact LIKE %s
+            """, (f"%{query}%", f"%{query}%", f"%{query}%"))
+
+        else:
+            cur.execute("SELECT * FROM students")
+
+    else:
+        cur.execute("SELECT * FROM students")
+
     rows = cur.fetchall()
+
     cur.close()
     conn.close()
 
@@ -87,6 +102,7 @@ else:
     year_count = {}
 
     for row in rows:
+
         roll = str(row[0] or "").replace(".0", "")
 
         student = {
@@ -108,37 +124,49 @@ else:
 
         upper_name = student["name"].upper()
 
+        # VACANT ROOM
         if "VACANT ROOM" in upper_name:
             vacant_rooms.append(student["room"])
+
+        # VACANT BED
         elif "BED VACANT" in upper_name:
             vacant_beds.append(student["room"])
-elif roll and roll.strip() and roll.lower() != "nan":
 
-    total_students += 1
+        # VALID STUDENT
+        elif roll and roll.strip() and roll.lower() != "nan":
 
-    year = student["year"]
+            total_students += 1
 
-    if year and year.strip() and year.lower() != "nan":
-        year_count[year] = year_count.get(year, 0) + 1
+            year = student["year"]
 
+            if year and year.strip() and year.lower() != "nan":
+                year_count[year] = year_count.get(year, 0) + 1
+
+        # SEARCH MATCH
         match = True
 
         if query:
             match = False
+
             if search_by == "roll" and query in student["roll"].lower():
                 match = True
+
             elif search_by == "room" and query in student["room"].lower():
                 match = True
+
             elif search_by == "name" and query in student["name"].lower():
                 match = True
+
             elif search_by == "mobile" and (
                 query in student["student_contact"].lower()
                 or query in student["parent_contact"].lower()
                 or query in student["mentor_contact"].lower()
             ):
                 match = True
+
             elif search_by == "state" and query in student["state"].lower():
                 match = True
+
             elif search_by == "mentor" and query in student["mentor_name"].lower():
                 match = True
 
@@ -156,32 +184,40 @@ elif roll and roll.strip() and roll.lower() != "nan":
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
+
     if request.method == "POST":
+
         if request.form.get("password") == ADMIN_PASSWORD:
             return render_template("admin.html", authorized=True)
+
         else:
             return render_template("admin.html", authorized=False, error="Wrong Password")
+
     return render_template("admin.html", authorized=False)
 
 
 @app.route("/upload", methods=["POST"])
 def upload_excel():
+
     file = request.files.get("file")
 
     if file:
+
         df = pd.read_excel(file)
 
         conn = get_connection()
         cur = conn.cursor()
 
-        # Clear old data
         cur.execute("DELETE FROM students")
 
         data = []
 
         for _, row in df.iterrows():
+
+            roll_value = "" if pd.isna(row.get("Roll No")) else str(row.get("Roll No"))
+
             data.append((
-                str(row.get("Roll No", "")).replace(".0", ""),
+                roll_value.replace(".0", ""),
                 str(row.get("Student Name", "")),
                 str(row.get("Student Mobile No", "")).replace(".0", ""),
                 str(row.get("Room No", "")),
@@ -197,7 +233,6 @@ def upload_excel():
                 str(row.get("Mentor Email", "")),
             ))
 
-        # Bulk insert (FAST)
         cur.executemany("""
         INSERT INTO students VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, data)
