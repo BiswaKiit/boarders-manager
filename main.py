@@ -1,11 +1,4 @@
-from flask import send_from_directory
-@app.route('/icon.png')
-def icon():
-    return send_from_directory('.', 'icon.png')
-@app.route('/manifest.json')
-def manifest():
-    return send_from_directory('.', 'manifest.json')
-from flask import Flask, jsonify, render_template, request, redirect
+from flask import Flask, jsonify, render_template, request, redirect, send_from_directory
 import pandas as pd
 import psycopg2
 import os
@@ -16,11 +9,25 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_PASSWORD = "hostel@123"
 
 
+# ---------------- ICON + MANIFEST ----------------
+
+@app.route('/icon.png')
+def icon():
+    return send_from_directory('.', 'icon.png')
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('.', 'manifest.json')
+
+
+# ---------------- DATABASE ----------------
+
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
 
 def init_db():
+
     conn = get_connection()
     cur = conn.cursor()
 
@@ -51,10 +58,14 @@ def init_db():
 init_db()
 
 
+# ---------------- HOME ----------------
+
 @app.route("/")
 def home():
     return render_template("index.html")
 
+
+# ---------------- STUDENT SEARCH ----------------
 
 @app.route("/students")
 def get_students():
@@ -65,7 +76,6 @@ def get_students():
     conn = get_connection()
     cur = conn.cursor()
 
-    # FAST DATABASE SEARCH
     if query:
 
         if search_by == "roll":
@@ -149,7 +159,6 @@ def get_students():
             if year and year.strip() and year.lower() != "nan":
                 year_count[year] = year_count.get(year, 0) + 1
 
-        # SEARCH MATCH
         match = True
 
         if query:
@@ -189,6 +198,8 @@ def get_students():
     })
 
 
+# ---------------- ADMIN LOGIN ----------------
+
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
 
@@ -202,6 +213,8 @@ def admin():
 
     return render_template("admin.html", authorized=False)
 
+
+# ---------------- EXCEL UPLOAD ----------------
 
 @app.route("/upload", methods=["POST"])
 def upload_excel():
@@ -224,6 +237,7 @@ def upload_excel():
             roll_value = "" if pd.isna(row.get("Roll No")) else str(row.get("Roll No"))
 
             data.append((
+
                 roll_value.replace(".0", ""),
                 str(row.get("Student Name", "")),
                 str(row.get("Student Mobile No", "")).replace(".0", ""),
@@ -238,6 +252,7 @@ def upload_excel():
                 str(row.get("Mentor Name", "")),
                 str(row.get("Mobile No", "")).replace(".0", ""),
                 str(row.get("Mentor Email", "")),
+
             ))
 
         cur.executemany("""
@@ -251,6 +266,10 @@ def upload_excel():
     return redirect("/")
 
 
+# ---------------- START SERVER ----------------
+
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 10000))
+
     app.run(host="0.0.0.0", port=port)
