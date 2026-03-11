@@ -1,4 +1,7 @@
 from flask import send_from_directory
+@app.route('/icon.png')
+def icon():
+    return send_from_directory('.', 'icon.png')
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('.', 'manifest.json')
