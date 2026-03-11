@@ -1,3 +1,7 @@
+from flask import send_from_directory
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('.', 'manifest.json')
 from flask import Flask, jsonify, render_template, request, redirect
 import pandas as pd
 import psycopg2
