@@ -4,6 +4,7 @@
 <head>
 <title>Boarders Manager</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#003366">
 <link rel="icon" href="/icon.png">
@@ -151,17 +152,23 @@ onkeypress="if(event.key==='Enter'){search();}">
 
 <div class="dashboard">
 
-<div class="card-stat" id="totalStudents">Total Students: 0</div>
+<div class="card-stat" id="totalStudents">
+Total Students: 0
+</div>
 
 <div class="card-stat" id="vacRooms">
 Vacant Rooms<br>
-<span id="vacRooms3S">3S : 0</span><br>
-<span id="vacRooms2S">2S : 0</span>
+<span id="room3s">3S : 0</span><br>
+<span id="room2s">2S : 0</span>
 </div>
 
-<div class="card-stat" id="vacBeds">Vacant Beds: 0</div>
+<div class="card-stat" id="vacBeds">
+Vacant Beds: 0
+</div>
 
-<div class="card-stat" id="yearStats">Year Stats</div>
+<div class="card-stat" id="yearStats">
+Year Stats
+</div>
 
 </div>
 
@@ -184,6 +191,7 @@ Created by: Biswa Ranjan Mishra
 
 let vacantRoomsList=[]
 let vacantBedsList=[]
+let allStudents=[]
 
 function loadDashboard(){
 
@@ -191,38 +199,39 @@ fetch("/students")
 .then(res=>res.json())
 .then(data=>{
 
+allStudents=data.students
 vacantRoomsList=data.vacant_rooms
 vacantBedsList=data.vacant_beds
 
 document.getElementById("totalStudents").innerText=
 "Total Students: "+data.total_students
 
-// UNIQUE ROOM LOGIC
+// COUNT UNIQUE ROOMS
 
-let rooms3S=new Set()
-let rooms2S=new Set()
+let rooms3s={}
+let rooms2s={}
 
-data.students.forEach(s=>{
+data.students.forEach(function(s){
 
-if(s.name.toUpperCase().includes("VACANT ROOM")){
+if(s.name && s.name.toUpperCase().includes("VACANT")){
 
 if(s.room_type==="3S"){
-rooms3S.add(s.room)
+rooms3s[s.room]=true
 }
 
 if(s.room_type==="2S"){
-rooms2S.add(s.room)
+rooms2s[s.room]=true
 }
 
 }
 
 })
 
-document.getElementById("vacRooms3S").innerText=
-"3S : "+rooms3S.size
+let count3s=Object.keys(rooms3s).length
+let count2s=Object.keys(rooms2s).length
 
-document.getElementById("vacRooms2S").innerText=
-"2S : "+rooms2S.size
+document.getElementById("room3s").innerText="3S : "+count3s
+document.getElementById("room2s").innerText="2S : "+count2s
 
 document.getElementById("vacBeds").innerText=
 "Vacant Beds: "+vacantBedsList.length
@@ -230,7 +239,7 @@ document.getElementById("vacBeds").innerText=
 let yearText=""
 
 for(let y in data.year_count){
-yearText+=y+": "+data.year_count[y]+" | "
+yearText+=y+" : "+data.year_count[y]+" | "
 }
 
 document.getElementById("yearStats").innerText=yearText
@@ -244,18 +253,26 @@ showStudents(data.students)
 function search(){
 
 const searchBy=document.getElementById("searchBy").value
-const input=document.getElementById("searchInput")
-const query=input.value
+const query=document.getElementById("searchInput").value.toLowerCase()
 
-fetch(`/students?search_by=${searchBy}&query=${query}`)
-.then(res=>res.json())
-.then(data=>{
+let filtered=allStudents.filter(function(s){
 
-showStudents(data.students)
+let value=""
 
-input.value=""
+if(searchBy==="roll") value=s.roll
+if(searchBy==="room") value=s.room
+if(searchBy==="name") value=s.name
+if(searchBy==="mobile") value=s.student_contact
+if(searchBy==="state") value=s.state
+if(searchBy==="mentor") value=s.mentor_name
+
+if(!value) return false
+
+return value.toLowerCase().includes(query)
 
 })
+
+showStudents(filtered)
 
 }
 
@@ -264,26 +281,26 @@ function showStudents(list){
 const container=document.getElementById("results")
 container.innerHTML=""
 
-list.forEach(s=>{
+list.forEach(function(s){
 
-container.innerHTML+=`
-<div class="card">
-<div><span class="label">Roll:</span> ${s.roll}</div>
-<div><span class="label">Name:</span> ${s.name}</div>
-<div><span class="label">Room:</span> ${s.room}</div>
-<div><span class="label">Room Type:</span> ${s.room_type}</div>
-<div><span class="label">Student Mobile:</span> ${s.student_contact}</div>
-<div><span class="label">Year:</span> ${s.year}</div>
-<div><span class="label">Branch:</span> ${s.branch}</div>
-<div><span class="label">Parent Name:</span> ${s.parent_name}</div>
-<div><span class="label">Parent Mobile:</span> ${s.parent_contact}</div>
-<div><span class="label">Parent Email:</span> ${s.parent_email}</div>
-<div><span class="label">State:</span> ${s.state}</div>
-<div><span class="label">Mentor Name:</span> ${s.mentor_name}</div>
-<div><span class="label">Mentor Mobile:</span> ${s.mentor_contact}</div>
-<div><span class="label">Mentor Email:</span> ${s.mentor_email}</div>
-</div>
-`
+container.innerHTML+=
+"<div class='card'>"+
+"<div><span class='label'>Roll:</span> "+s.roll+"</div>"+
+"<div><span class='label'>Name:</span> "+s.name+"</div>"+
+"<div><span class='label'>Room:</span> "+s.room+"</div>"+
+"<div><span class='label'>Room Type:</span> "+s.room_type+"</div>"+
+"<div><span class='label'>Student Mobile:</span> "+s.student_contact+"</div>"+
+"<div><span class='label'>Year:</span> "+s.year+"</div>"+
+"<div><span class='label'>Branch:</span> "+s.branch+"</div>"+
+"<div><span class='label'>Parent Name:</span> "+s.parent_name+"</div>"+
+"<div><span class='label'>Parent Mobile:</span> "+s.parent_contact+"</div>"+
+"<div><span class='label'>Parent Email:</span> "+s.parent_email+"</div>"+
+"<div><span class='label'>State:</span> "+s.state+"</div>"+
+"<div><span class='label'>Mentor Name:</span> "+s.mentor_name+"</div>"+
+"<div><span class='label'>Mentor Mobile:</span> "+s.mentor_contact+"</div>"+
+"<div><span class='label'>Mentor Email:</span> "+s.mentor_email+"</div>"+
+"</div>"
+
 })
 
 }
