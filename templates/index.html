@@ -96,7 +96,7 @@ button{
     color:black;
 }
 
-/* ===== POPUP MODAL ===== */
+/* POPUP */
 
 .modal{
     display:none;
@@ -174,8 +174,6 @@ Created by: Biswa Ranjan Mishra
 <a href="/admin">Admin</a>
 </div>
 
-<!-- ===== POPUP ===== -->
-
 <div class="modal" id="popupModal">
   <div class="modal-content">
     <span class="close-btn" onclick="closePopup()">X</span>
@@ -201,14 +199,33 @@ vacantBedsList = data.vacant_beds;
 document.getElementById("totalStudents").innerText =
 "Total Students: " + data.total_students;
 
+let count3S = 0;
+let count2S = 0;
+
+data.students.forEach(s => {
+
+if(s.name.toUpperCase().includes("VACANT ROOM")){
+
+if(s.room_type === "3S"){
+count3S++;
+}
+
+if(s.room_type === "2S"){
+count2S++;
+}
+
+}
+
+});
+
 document.getElementById("vacRooms3S").innerText =
-"3S : " + data.vacant_3s;
+"3S : " + count3S;
 
 document.getElementById("vacRooms2S").innerText =
-"2S : " + data.vacant_2s;
+"2S : " + count2S;
 
 document.getElementById("vacBeds").innerText =
-"Vacant Beds: " + data.vacant_beds_total;
+"Vacant Beds: " + vacantBedsList.length;
 
 let yearText="";
 for(let y in data.year_count){
