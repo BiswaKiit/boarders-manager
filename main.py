@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-EXCEL_FILE = "students.xlsx"
+EXCEL_FILE = "Student Master Export Final.xlsx"
 ADMIN_PASSWORD = "hostel@123"
 
 
@@ -14,6 +14,7 @@ def load_data():
 
     df = pd.read_excel(EXCEL_FILE)
 
+    df.columns = df.columns.str.strip()
     df.fillna("", inplace=True)
 
     return df
@@ -24,10 +25,6 @@ def home():
     return render_template("index.html")
 
 
-# ==============================
-# STUDENTS API
-# ==============================
-
 @app.route("/students")
 def students():
 
@@ -35,7 +32,6 @@ def students():
 
     students = []
     vacant_beds = []
-
     room_data = {}
 
     for _, row in df.iterrows():
@@ -50,25 +46,25 @@ def students():
             "name": name,
             "room": room,
             "room_type": room_type,
-            "student_contact": str(row.get("Student Contact", "")),
+            "student_contact": str(row.get("Student Mobile No", "")),
             "year": str(row.get("Year", "")),
             "branch": str(row.get("Branch", "")),
             "parent_name": str(row.get("Parent Name", "")),
-            "parent_contact": str(row.get("Parent Contact", "")),
+            "parent_contact": str(row.get("Parent Contact No", "")),
             "parent_email": str(row.get("Parent Email", "")),
             "state": str(row.get("State", "")),
             "mentor_name": str(row.get("Mentor Name", "")),
-            "mentor_contact": str(row.get("Mentor Contact", "")),
+            "mentor_contact": str(row.get("Mobile No", "")),
             "mentor_email": str(row.get("Mentor Email", ""))
         }
 
         students.append(student)
 
         # vacant bed
-        if name == "" or name.lower() == "nan":
+        if name == "":
             vacant_beds.append(room)
 
-        # room grouping
+        # group room data
         if room not in room_data:
             room_data[room] = {
                 "room_type": room_type,
@@ -77,10 +73,7 @@ def students():
 
         room_data[room]["beds"].append(name)
 
-    # ==============================
-    # VACANT ROOM CALCULATION
-    # ==============================
-
+    # vacant room logic
     vacant_rooms = []
     vacant_rooms_3s = []
     vacant_rooms_2s = []
@@ -90,32 +83,28 @@ def students():
         beds = info["beds"]
         room_type = info["room_type"]
 
-        if all(b == "" or b.lower() == "nan" for b in beds):
+        if all(b == "" for b in beds):
 
             vacant_rooms.append(room)
 
-            if room_type == "3S":
+            if "3S" in room_type:
                 vacant_rooms_3s.append(room)
 
-            if room_type == "2S":
+            if "2S" in room_type:
                 vacant_rooms_2s.append(room)
 
-    # ==============================
-    # TOTAL STUDENTS
-    # ==============================
-
+    # total students
     total_students = df["Roll No"].replace("", pd.NA).dropna().count()
 
-    # ==============================
-    # YEAR COUNT
-    # ==============================
-
+    # year count
     year_count = {}
 
     for y in df["Year"]:
         y = str(y).strip()
-        if y == "" or y.lower() == "nan":
+
+        if y == "":
             continue
+
         year_count[y] = year_count.get(y, 0) + 1
 
     return jsonify({
@@ -128,10 +117,6 @@ def students():
         "year_count": year_count
     })
 
-
-# ==============================
-# ADMIN PANEL
-# ==============================
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
