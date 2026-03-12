@@ -96,7 +96,7 @@ button{
     color:black;
 }
 
-/* POPUP */
+/* ===== POPUP MODAL ===== */
 
 .modal{
     display:none;
@@ -152,10 +152,19 @@ onkeypress="if(event.key==='Enter'){search();}">
 </div>
 
 <div class="dashboard">
+
 <div class="card-stat" id="totalStudents">Total Students: 0</div>
-<div class="card-stat" id="vacRooms">Vacant Rooms: 0</div>
+
+<div class="card-stat" id="vacRooms">
+Vacant Rooms<br>
+<span id="vacRooms3S">3S : 0</span><br>
+<span id="vacRooms2S">2S : 0</span>
+</div>
+
 <div class="card-stat" id="vacBeds">Vacant Beds: 0</div>
+
 <div class="card-stat" id="yearStats">Year Stats</div>
+
 </div>
 
 <div class="results" id="results"></div>
@@ -164,6 +173,8 @@ onkeypress="if(event.key==='Enter'){search();}">
 Created by: Biswa Ranjan Mishra
 <a href="/admin">Admin</a>
 </div>
+
+<!-- ===== POPUP ===== -->
 
 <div class="modal" id="popupModal">
   <div class="modal-content">
@@ -187,14 +198,17 @@ fetch(`/students`)
 vacantRoomsList = data.vacant_rooms;
 vacantBedsList = data.vacant_beds;
 
-document.getElementById("vacRooms").innerText =
-"Vacant Rooms: " + vacantRoomsList.length;
-
-document.getElementById("vacBeds").innerText =
-"Vacant Beds: " + vacantBedsList.length;
-
 document.getElementById("totalStudents").innerText =
 "Total Students: " + data.total_students;
+
+document.getElementById("vacRooms3S").innerText =
+"3S : " + data.vacant_3s;
+
+document.getElementById("vacRooms2S").innerText =
+"2S : " + data.vacant_2s;
+
+document.getElementById("vacBeds").innerText =
+"Vacant Beds: " + data.vacant_beds_total;
 
 let yearText="";
 for(let y in data.year_count){
