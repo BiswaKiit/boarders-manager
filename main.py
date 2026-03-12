@@ -9,8 +9,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_PASSWORD = "hostel@123"
 
 
-# ---------------- ICON + MANIFEST ----------------
-
 @app.route('/icon.png')
 def icon():
     return send_from_directory('.', 'icon.png')
@@ -20,16 +18,14 @@ def manifest():
     return send_from_directory('.', 'manifest.json')
 
 
-# ---------------- DATABASE ----------------
-
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
 
 def init_db():
 
-    conn = get_connection()
-    cur = conn.cursor()
+    conn=get_connection()
+    cur=conn.cursor()
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS students (
@@ -54,210 +50,180 @@ def init_db():
     cur.close()
     conn.close()
 
-
 init_db()
 
-
-# ---------------- HOME ----------------
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-# ---------------- STUDENT SEARCH ----------------
-
 @app.route("/students")
 def get_students():
 
-    search_by = request.args.get("search_by", "").lower()
-    query = request.args.get("query", "").lower()
+    search_by=request.args.get("search_by","").lower()
+    query=request.args.get("query","").lower()
 
-    conn = get_connection()
-    cur = conn.cursor()
+    conn=get_connection()
+    cur=conn.cursor()
 
-    if query:
-
-        if search_by == "roll":
-            cur.execute("SELECT * FROM students WHERE LOWER(roll) LIKE %s", (f"%{query}%",))
-
-        elif search_by == "room":
-            cur.execute("SELECT * FROM students WHERE LOWER(room) LIKE %s", (f"%{query}%",))
-
-        elif search_by == "name":
-            cur.execute("SELECT * FROM students WHERE LOWER(name) LIKE %s", (f"%{query}%",))
-
-        elif search_by == "state":
-            cur.execute("SELECT * FROM students WHERE LOWER(state) LIKE %s", (f"%{query}%",))
-
-        elif search_by == "mentor":
-            cur.execute("SELECT * FROM students WHERE LOWER(mentor_name) LIKE %s", (f"%{query}%",))
-
-        elif search_by == "mobile":
-            cur.execute("""
-            SELECT * FROM students
-            WHERE student_contact LIKE %s
-            OR parent_contact LIKE %s
-            OR mentor_contact LIKE %s
-            """, (f"%{query}%", f"%{query}%", f"%{query}%"))
-
-        else:
-            cur.execute("SELECT * FROM students")
-
-    else:
-        cur.execute("SELECT * FROM students")
-
-    rows = cur.fetchall()
+    cur.execute("SELECT * FROM students")
+    rows=cur.fetchall()
 
     cur.close()
     conn.close()
 
-    results = []
-    vacant_rooms = []
-    vacant_beds = []
-    total_students = 0
-    year_count = {}
+    students=[]
+    total_students=0
+    year_count={}
 
-    for row in rows:
+    room_data={}
+    vacant_rooms=[]
+    vacant_beds=[]
 
-        roll = str(row[0] or "").replace(".0", "")
+    for r in rows:
 
-        student = {
-            "roll": roll,
-            "name": row[1] or "",
-            "student_contact": str(row[2] or "").replace(".0", ""),
-            "room": row[3] or "",
-            "room_type": row[4] or "",
-            "year": row[5] or "",
-            "branch": row[6] or "",
-            "parent_name": row[7] or "",
-            "parent_contact": str(row[8] or "").replace(".0", ""),
-            "parent_email": row[9] or "",
-            "state": row[10] or "",
-            "mentor_name": row[11] or "",
-            "mentor_contact": str(row[12] or "").replace(".0", ""),
-            "mentor_email": row[13] or "",
+        roll=str(r[0] or "").replace(".0","")
+        room=r[3] or ""
+        room_type=r[4] or ""
+        name=r[1] or ""
+
+        student={
+            "roll":roll,
+            "name":name,
+            "student_contact":str(r[2] or "").replace(".0",""),
+            "room":room,
+            "room_type":room_type,
+            "year":r[5] or "",
+            "branch":r[6] or "",
+            "parent_name":r[7] or "",
+            "parent_contact":str(r[8] or "").replace(".0",""),
+            "parent_email":r[9] or "",
+            "state":r[10] or "",
+            "mentor_name":r[11] or "",
+            "mentor_contact":str(r[12] or "").replace(".0",""),
+            "mentor_email":r[13] or ""
         }
 
-        upper_name = student["name"].upper()
+        students.append(student)
 
-        # VACANT ROOM
-        if "VACANT ROOM" in upper_name:
-            vacant_rooms.append(student["room"])
+        if roll and roll.lower()!="nan":
 
-        # VACANT BED
-        elif "BED VACANT" in upper_name:
-            vacant_beds.append(student["room"])
+            total_students+=1
 
-        # VALID STUDENT
-        elif roll and roll.strip() and roll.lower() != "nan":
+            y=student["year"]
 
-            total_students += 1
+            if y and y.lower()!="nan":
+                year_count[y]=year_count.get(y,0)+1
 
-            year = student["year"]
+        if room:
 
-            if year and year.strip() and year.lower() != "nan":
-                year_count[year] = year_count.get(year, 0) + 1
+            if room not in room_data:
+                room_data[room]={"type":room_type,"count":0}
 
-        match = True
+            if "VACANT" not in name.upper():
+                room_data[room]["count"]+=1
+
+        if "BED VACANT" in name.upper():
+            vacant_beds.append(room)
+
+        if "VACANT ROOM" in name.upper():
+            vacant_rooms.append(room)
+
+    results=[]
+
+    for s in students:
+
+        match=True
 
         if query:
-            match = False
+            match=False
 
-            if search_by == "roll" and query in student["roll"].lower():
-                match = True
-
-            elif search_by == "room" and query in student["room"].lower():
-                match = True
-
-            elif search_by == "name" and query in student["name"].lower():
-                match = True
-
-            elif search_by == "mobile" and (
-                query in student["student_contact"].lower()
-                or query in student["parent_contact"].lower()
-                or query in student["mentor_contact"].lower()
+            if search_by=="roll" and query in s["roll"].lower():
+                match=True
+            elif search_by=="room" and query in s["room"].lower():
+                match=True
+            elif search_by=="name" and query in s["name"].lower():
+                match=True
+            elif search_by=="state" and query in s["state"].lower():
+                match=True
+            elif search_by=="mentor" and query in s["mentor_name"].lower():
+                match=True
+            elif search_by=="mobile" and (
+                query in s["student_contact"].lower()
+                or query in s["parent_contact"].lower()
+                or query in s["mentor_contact"].lower()
             ):
-                match = True
-
-            elif search_by == "state" and query in student["state"].lower():
-                match = True
-
-            elif search_by == "mentor" and query in student["mentor_name"].lower():
-                match = True
+                match=True
 
         if match:
-            results.append(student)
+            results.append(s)
 
     return jsonify({
-        "students": results,
-        "vacant_rooms": vacant_rooms,
-        "vacant_beds": vacant_beds,
-        "total_students": total_students,
-        "year_count": year_count
+        "students":results,
+        "vacant_rooms":vacant_rooms,
+        "vacant_beds":vacant_beds,
+        "total_students":total_students,
+        "year_count":year_count
     })
 
 
-# ---------------- ADMIN LOGIN ----------------
-
-@app.route("/admin", methods=["GET", "POST"])
+@app.route("/admin",methods=["GET","POST"])
 def admin():
 
-    if request.method == "POST":
+    if request.method=="POST":
 
-        if request.form.get("password") == ADMIN_PASSWORD:
-            return render_template("admin.html", authorized=True)
+        if request.form.get("password")==ADMIN_PASSWORD:
+            return render_template("admin.html",authorized=True)
 
         else:
-            return render_template("admin.html", authorized=False, error="Wrong Password")
+            return render_template("admin.html",authorized=False,error="Wrong Password")
 
-    return render_template("admin.html", authorized=False)
+    return render_template("admin.html",authorized=False)
 
 
-# ---------------- EXCEL UPLOAD ----------------
-
-@app.route("/upload", methods=["POST"])
+@app.route("/upload",methods=["POST"])
 def upload_excel():
 
-    file = request.files.get("file")
+    file=request.files.get("file")
 
     if file:
 
-        df = pd.read_excel(file)
+        df=pd.read_excel(file)
 
-        conn = get_connection()
-        cur = conn.cursor()
+        conn=get_connection()
+        cur=conn.cursor()
 
         cur.execute("DELETE FROM students")
 
-        data = []
+        data=[]
 
-        for _, row in df.iterrows():
+        for _,row in df.iterrows():
 
-            roll_value = "" if pd.isna(row.get("Roll No")) else str(row.get("Roll No"))
+            roll="" if pd.isna(row.get("Roll No")) else str(row.get("Roll No"))
 
             data.append((
 
-                roll_value.replace(".0", ""),
-                str(row.get("Student Name", "")),
-                str(row.get("Student Mobile No", "")).replace(".0", ""),
-                str(row.get("Room No", "")),
-                str(row.get("Room Type", "")),
-                str(row.get("Year", "")),
-                str(row.get("Branch", "")),
-                str(row.get("Parent Name", "")),
-                str(row.get("Parent Contact No", "")).replace(".0", ""),
-                str(row.get("Parent Email", "")),
-                str(row.get("State", "")),
-                str(row.get("Mentor Name", "")),
-                str(row.get("Mobile No", "")).replace(".0", ""),
-                str(row.get("Mentor Email", "")),
+                roll.replace(".0",""),
+                str(row.get("Student Name","")),
+                str(row.get("Student Mobile No","")).replace(".0",""),
+                str(row.get("Room No","")),
+                str(row.get("Room Type","")),
+                str(row.get("Year","")),
+                str(row.get("Branch","")),
+                str(row.get("Parent Name","")),
+                str(row.get("Parent Contact No","")).replace(".0",""),
+                str(row.get("Parent Email","")),
+                str(row.get("State","")),
+                str(row.get("Mentor Name","")),
+                str(row.get("Mobile No","")).replace(".0",""),
+                str(row.get("Mentor Email",""))
 
             ))
 
         cur.executemany("""
         INSERT INTO students VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, data)
+        """,data)
 
         conn.commit()
         cur.close()
@@ -266,10 +232,7 @@ def upload_excel():
     return redirect("/")
 
 
-# ---------------- START SERVER ----------------
+if __name__=="__main__":
 
-if __name__ == "__main__":
-
-    port = int(os.environ.get("PORT", 10000))
-
-    app.run(host="0.0.0.0", port=port)
+    port=int(os.environ.get("PORT",10000))
+    app.run(host="0.0.0.0",port=port)

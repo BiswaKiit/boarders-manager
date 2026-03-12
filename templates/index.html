@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <title>Boarders Manager</title>
@@ -95,7 +96,8 @@ button{
     color:black;
 }
 
-/* ===== POPUP MODAL ===== */
+/* POPUP */
+
 .modal{
     display:none;
     position:fixed;
@@ -124,6 +126,7 @@ button{
     font-weight:bold;
 }
 </style>
+
 </head>
 
 <body>
@@ -131,6 +134,7 @@ button{
 <h2>Boarders Manager</h2>
 
 <div class="search-box">
+
 <select id="searchBy">
 <option value="roll">Roll No</option>
 <option value="room">Room No</option>
@@ -142,7 +146,9 @@ button{
 
 <input type="text" id="searchInput" placeholder="Type here"
 onkeypress="if(event.key==='Enter'){search();}">
+
 <button onclick="search()">Search</button>
+
 </div>
 
 <div class="dashboard">
@@ -159,7 +165,6 @@ Created by: Biswa Ranjan Mishra
 <a href="/admin">Admin</a>
 </div>
 
-<!-- ===== POPUP ===== -->
 <div class="modal" id="popupModal">
   <div class="modal-content">
     <span class="close-btn" onclick="closePopup()">X</span>
@@ -173,12 +178,9 @@ Created by: Biswa Ranjan Mishra
 let vacantRoomsList = [];
 let vacantBedsList = [];
 
-function search(){
-const searchBy=document.getElementById("searchBy").value;
-const input=document.getElementById("searchInput");
-const query=input.value;
+function loadDashboard(){
 
-fetch(`/students?search_by=${searchBy}&query=${query}`)
+fetch(`/students`)
 .then(res=>res.json())
 .then(data=>{
 
@@ -198,12 +200,40 @@ let yearText="";
 for(let y in data.year_count){
 yearText += y + ": " + data.year_count[y] + " | ";
 }
+
 document.getElementById("yearStats").innerText = yearText;
+
+showStudents(data.students);
+
+});
+
+}
+
+function search(){
+
+const searchBy=document.getElementById("searchBy").value;
+const input=document.getElementById("searchInput");
+const query=input.value;
+
+fetch(`/students?search_by=${searchBy}&query=${query}`)
+.then(res=>res.json())
+.then(data=>{
+
+showStudents(data.students);
+
+input.value="";
+
+});
+
+}
+
+function showStudents(list){
 
 const container=document.getElementById("results");
 container.innerHTML="";
 
-data.students.forEach(s=>{
+list.forEach(s=>{
+
 container.innerHTML+=`
 <div class="card">
 <div><span class="label">Roll:</span> ${s.roll}</div>
@@ -222,22 +252,24 @@ container.innerHTML+=`
 <div><span class="label">Mentor Email:</span> ${s.mentor_email}</div>
 </div>
 `;
+
 });
 
-input.value="";
-});
 }
 
 function showPopup(title, list){
+
 document.getElementById("popupTitle").innerText = title;
 
 if(list.length === 0){
 document.getElementById("popupBody").innerHTML = "No data available";
-} else {
+}
+else{
 document.getElementById("popupBody").innerHTML = list.join("<br>");
 }
 
 document.getElementById("popupModal").style.display="flex";
+
 }
 
 function closePopup(){
@@ -252,7 +284,7 @@ document.getElementById("vacBeds").onclick = function(){
 showPopup("Vacant Beds", vacantBedsList);
 };
 
-search();
+loadDashboard();
 
 </script>
 
