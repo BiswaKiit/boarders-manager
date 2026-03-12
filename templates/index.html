@@ -234,8 +234,8 @@ rooms2s[room] = true
 let count3s=Object.keys(rooms3s).length
 let count2s=Object.keys(rooms2s).length
 
-document.getElementById("room3s").innerText="3S : "+count3s
-document.getElementById("room2s").innerText="2S : "+count2s
+document.getElementById("room3s").innerText="3S : "+data.vacant_rooms_3s.length
+document.getElementById("room2s").innerText="2S : "+data.vacant_rooms_2s.length
 
 document.getElementById("vacBeds").innerText=
 "Vacant Beds: "+vacantBedsList.length
