@@ -206,21 +206,25 @@ vacantBedsList=data.vacant_beds
 document.getElementById("totalStudents").innerText=
 "Total Students: "+data.total_students
 
-// COUNT UNIQUE ROOMS
+// COUNT VACANT ROOMS BY TYPE
 
-let rooms3s={}
-let rooms2s={}
+let rooms3s = {}
+let rooms2s = {}
 
-data.students.forEach(function(s){
+vacantRoomsList.forEach(function(room){
 
-if(s.name && s.name.toUpperCase().includes("VACANT")){
+let student = data.students.find(function(s){
+return s.room === room
+})
 
-if(s.room_type==="3S"){
-rooms3s[s.room]=true
+if(student){
+
+if(student.room_type === "3S"){
+rooms3s[room] = true
 }
 
-if(s.room_type==="2S"){
-rooms2s[s.room]=true
+if(student.room_type === "2S"){
+rooms2s[room] = true
 }
 
 }
