@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <title>Boarders Manager</title>
@@ -9,121 +10,121 @@
 
 <style>
 body{
-    font-family: Arial;
-    margin:0;
-    background:linear-gradient(to bottom,#e6f0ff,#ffffff);
-    padding-bottom:80px;
+font-family:Arial;
+margin:0;
+background:linear-gradient(to bottom,#e6f0ff,#ffffff);
+padding-bottom:80px;
 }
 
 h2{
-    text-align:center;
-    color:#003366;
-    padding:10px;
+text-align:center;
+color:#003366;
+padding:10px;
 }
 
 .search-box{
-    text-align:center;
-    padding:10px;
+text-align:center;
+padding:10px;
 }
 
 select,input,button{
-    padding:8px;
-    margin:5px;
-    border-radius:8px;
-    border:1px solid #ccc;
-    font-size:14px;
+padding:8px;
+margin:5px;
+border-radius:8px;
+border:1px solid #ccc;
+font-size:14px;
 }
 
 button{
-    background:#007BFF;
-    color:white;
-    border:none;
-    cursor:pointer;
+background:#007BFF;
+color:white;
+border:none;
+cursor:pointer;
 }
 
 .dashboard{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-    padding:10px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+padding:10px;
 }
 
 .card-stat{
-    background:#ffffff;
-    padding:12px;
-    border-radius:12px;
-    text-align:center;
-    font-weight:bold;
-    box-shadow:0 3px 8px rgba(0,0,0,0.1);
-    cursor:pointer;
+background:#fff;
+padding:12px;
+border-radius:12px;
+text-align:center;
+font-weight:bold;
+box-shadow:0 3px 8px rgba(0,0,0,0.1);
+cursor:pointer;
 }
 
 .results{
-    padding:10px;
+padding:10px;
 }
 
 .card{
-    background:white;
-    padding:12px;
-    margin-bottom:12px;
-    border-radius:12px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+background:white;
+padding:12px;
+margin-bottom:12px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 
 .label{
-    font-weight:bold;
-    color:#0056b3;
+font-weight:bold;
+color:#0056b3;
 }
 
 .footer{
-    position:fixed;
-    bottom:0;
-    width:100%;
-    background:#003366;
-    color:white;
-    text-align:center;
-    padding:12px;
-    font-weight:bold;
+position:fixed;
+bottom:0;
+width:100%;
+background:#003366;
+color:white;
+text-align:center;
+padding:12px;
+font-weight:bold;
 }
 
 .footer a{
-    background:#ffc107;
-    padding:6px 14px;
-    margin-left:15px;
-    border-radius:6px;
-    text-decoration:none;
-    color:black;
+background:#ffc107;
+padding:6px 14px;
+margin-left:15px;
+border-radius:6px;
+text-decoration:none;
+color:black;
 }
 
-/* ===== POPUP MODAL ===== */
 .modal{
-    display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.5);
-    justify-content:center;
-    align-items:center;
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+justify-content:center;
+align-items:center;
 }
 
 .modal-content{
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    width:80%;
-    max-height:70%;
-    overflow:auto;
+background:white;
+padding:20px;
+border-radius:12px;
+width:80%;
+max-height:70%;
+overflow:auto;
 }
 
 .close-btn{
-    float:right;
-    cursor:pointer;
-    color:red;
-    font-weight:bold;
+float:right;
+cursor:pointer;
+color:red;
+font-weight:bold;
 }
 </style>
+
 </head>
 
 <body>
@@ -131,6 +132,7 @@ button{
 <h2>Boarders Manager</h2>
 
 <div class="search-box">
+
 <select id="searchBy">
 <option value="roll">Roll No</option>
 <option value="room">Room No</option>
@@ -142,14 +144,25 @@ button{
 
 <input type="text" id="searchInput" placeholder="Type here"
 onkeypress="if(event.key==='Enter'){search();}">
+
 <button onclick="search()">Search</button>
+
 </div>
 
 <div class="dashboard">
+
 <div class="card-stat" id="totalStudents">Total Students: 0</div>
-<div class="card-stat" id="vacRooms">Vacant Rooms: 0</div>
+
+<div class="card-stat" id="vacRooms">
+Vacant Rooms<br>
+<span id="vacRooms3S">3S : 0</span><br>
+<span id="vacRooms2S">2S : 0</span>
+</div>
+
 <div class="card-stat" id="vacBeds">Vacant Beds: 0</div>
+
 <div class="card-stat" id="yearStats">Year Stats</div>
+
 </div>
 
 <div class="results" id="results"></div>
@@ -159,51 +172,100 @@ Created by: Biswa Ranjan Mishra
 <a href="/admin">Admin</a>
 </div>
 
-<!-- ===== POPUP ===== -->
 <div class="modal" id="popupModal">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closePopup()">X</span>
-    <h3 id="popupTitle"></h3>
-    <div id="popupBody"></div>
-  </div>
+<div class="modal-content">
+<span class="close-btn" onclick="closePopup()">X</span>
+<h3 id="popupTitle"></h3>
+<div id="popupBody"></div>
+</div>
 </div>
 
 <script>
 
-let vacantRoomsList = [];
-let vacantBedsList = [];
+let vacantRoomsList=[]
+let vacantBedsList=[]
+
+function loadDashboard(){
+
+fetch("/students")
+.then(res=>res.json())
+.then(data=>{
+
+vacantRoomsList=data.vacant_rooms
+vacantBedsList=data.vacant_beds
+
+document.getElementById("totalStudents").innerText=
+"Total Students: "+data.total_students
+
+// UNIQUE ROOM LOGIC
+
+let rooms3S=new Set()
+let rooms2S=new Set()
+
+data.students.forEach(s=>{
+
+if(s.name.toUpperCase().includes("VACANT ROOM")){
+
+if(s.room_type==="3S"){
+rooms3S.add(s.room)
+}
+
+if(s.room_type==="2S"){
+rooms2S.add(s.room)
+}
+
+}
+
+})
+
+document.getElementById("vacRooms3S").innerText=
+"3S : "+rooms3S.size
+
+document.getElementById("vacRooms2S").innerText=
+"2S : "+rooms2S.size
+
+document.getElementById("vacBeds").innerText=
+"Vacant Beds: "+vacantBedsList.length
+
+let yearText=""
+
+for(let y in data.year_count){
+yearText+=y+": "+data.year_count[y]+" | "
+}
+
+document.getElementById("yearStats").innerText=yearText
+
+showStudents(data.students)
+
+})
+
+}
 
 function search(){
-const searchBy=document.getElementById("searchBy").value;
-const input=document.getElementById("searchInput");
-const query=input.value;
+
+const searchBy=document.getElementById("searchBy").value
+const input=document.getElementById("searchInput")
+const query=input.value
 
 fetch(`/students?search_by=${searchBy}&query=${query}`)
 .then(res=>res.json())
 .then(data=>{
 
-vacantRoomsList = data.vacant_rooms;
-vacantBedsList = data.vacant_beds;
+showStudents(data.students)
 
-document.getElementById("vacRooms").innerText =
-"Vacant Rooms: " + vacantRoomsList.length;
+input.value=""
 
-document.getElementById("vacBeds").innerText =
-"Vacant Beds: " + vacantBedsList.length;
+})
 
-document.getElementById("totalStudents").innerText =
-"Total Students: " + data.total_students;
-
-let yearText="";
-for(let y in data.year_count){
-yearText += y + ": " + data.year_count[y] + " | ";
 }
-document.getElementById("yearStats").innerText = yearText;
 
-const container=document.getElementById("results");
-container.innerHTML="";
+function showStudents(list){
 
-data.students.forEach(s=>{
+const container=document.getElementById("results")
+container.innerHTML=""
+
+list.forEach(s=>{
+
 container.innerHTML+=`
 <div class="card">
 <div><span class="label">Roll:</span> ${s.roll}</div>
@@ -221,38 +283,39 @@ container.innerHTML+=`
 <div><span class="label">Mentor Mobile:</span> ${s.mentor_contact}</div>
 <div><span class="label">Mentor Email:</span> ${s.mentor_email}</div>
 </div>
-`;
-});
+`
+})
 
-input.value="";
-});
 }
 
-function showPopup(title, list){
-document.getElementById("popupTitle").innerText = title;
+function showPopup(title,list){
 
-if(list.length === 0){
-document.getElementById("popupBody").innerHTML = "No data available";
-} else {
-document.getElementById("popupBody").innerHTML = list.join("<br>");
+document.getElementById("popupTitle").innerText=title
+
+if(list.length===0){
+document.getElementById("popupBody").innerHTML="No data available"
+}
+else{
+document.getElementById("popupBody").innerHTML=list.join("<br>")
 }
 
-document.getElementById("popupModal").style.display="flex";
+document.getElementById("popupModal").style.display="flex"
+
 }
 
 function closePopup(){
-document.getElementById("popupModal").style.display="none";
+document.getElementById("popupModal").style.display="none"
 }
 
-document.getElementById("vacRooms").onclick = function(){
-showPopup("Vacant Rooms", vacantRoomsList);
-};
+document.getElementById("vacRooms").onclick=function(){
+showPopup("Vacant Rooms",vacantRoomsList)
+}
 
-document.getElementById("vacBeds").onclick = function(){
-showPopup("Vacant Beds", vacantBedsList);
-};
+document.getElementById("vacBeds").onclick=function(){
+showPopup("Vacant Beds",vacantBedsList)
+}
 
-search();
+loadDashboard()
 
 </script>
 
