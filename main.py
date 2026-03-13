@@ -4,11 +4,12 @@ import os
 
 app = Flask(__name__)
 
-EXCEL_FILE = "students.xlsx"
+EXCEL_FILE = "Student Master Export Final.xlsx"
 ADMIN_PASSWORD = "hostel@123"
 
 
 def load_data():
+
     if not os.path.exists(EXCEL_FILE):
         return pd.DataFrame()
 
@@ -32,6 +33,7 @@ def students():
 
     students = []
     vacant_beds = []
+
     room_data = {}
 
     for _, row in df.iterrows():
@@ -60,11 +62,9 @@ def students():
 
         students.append(student)
 
-        # vacant bed
         if name == "":
             vacant_beds.append(room)
 
-        # group room data
         if room not in room_data:
             room_data[room] = {
                 "room_type": room_type,
@@ -73,7 +73,6 @@ def students():
 
         room_data[room]["beds"].append(name)
 
-    # vacant room logic
     vacant_rooms = []
     vacant_rooms_3s = []
     vacant_rooms_2s = []
@@ -87,19 +86,18 @@ def students():
 
             vacant_rooms.append(room)
 
-            if "3S" in room_type:
+            if room_type == "3S":
                 vacant_rooms_3s.append(room)
 
-            if "2S" in room_type:
+            if room_type == "2S":
                 vacant_rooms_2s.append(room)
 
-    # total students
-    total_students = df["Roll No"].replace("", pd.NA).dropna().count()
+    total_students = df["Student Name"].replace("", pd.NA).dropna().count()
 
-    # year count
     year_count = {}
 
     for y in df["Year"]:
+
         y = str(y).strip()
 
         if y == "":
@@ -118,40 +116,27 @@ def students():
     })
 
 
-@app.route("/admin", methods=["GET", "POST"])
+@app.route("/admin")
 def admin():
+    return render_template("admin.html")
 
-    if request.method == "POST":
 
-        password = request.form.get("password")
+@app.route("/upload", methods=["POST"])
+def upload():
 
-        if password != ADMIN_PASSWORD:
-            return "Wrong Password"
+    password = request.form.get("password")
 
-        file = request.files.get("file")
+    if password != ADMIN_PASSWORD:
+        return "Wrong Password"
 
-        if not file:
-            return "No file uploaded"
+    file = request.files.get("file")
 
-        file.save(EXCEL_FILE)
+    if not file:
+        return "No file selected"
 
-        return "Excel Updated Successfully"
+    file.save(EXCEL_FILE)
 
-    return '''
-    <h2>Upload New Excel</h2>
-
-    <form method="POST" enctype="multipart/form-data">
-
-        Password:<br>
-        <input type="password" name="password"><br><br>
-
-        Select Excel:<br>
-        <input type="file" name="file"><br><br>
-
-        <button type="submit">Upload</button>
-
-    </form>
-    '''
+    return "Excel Updated Successfully"
 
 
 if __name__ == "__main__":
