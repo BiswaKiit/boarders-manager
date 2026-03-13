@@ -1,23 +1,15 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect
 import pandas as pd
+import psycopg2
 import os
 
 app = Flask(__name__)
 
-EXCEL_FILE = "Student Master Export Final.xlsx"
-ADMIN_PASSWORD = "hostel@123"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
-def load_data():
-    if not os.path.exists(EXCEL_FILE):
-        return pd.DataFrame()
-
-    df = pd.read_excel(EXCEL_FILE)
-
-    df.columns = df.columns.str.strip()
-    df.fillna("", inplace=True)
-
-    return df
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
 
 
 @app.route("/")
@@ -28,131 +20,204 @@ def home():
 @app.route("/students")
 def students():
 
-    df = load_data()
+    search_by = request.args.get("search_by","")
+    query = request.args.get("query","").lower()
 
-    students = []
-    vacant_beds = []
-    room_data = {}
+    conn = get_conn()
+    cur = conn.cursor()
 
-    for _, row in df.iterrows():
+    cur.execute("SELECT * FROM students")
+    rows = cur.fetchall()
 
-        roll = str(row.get("Roll No", "")).strip()
-        name = str(row.get("Student Name", "")).strip()
-        room = str(row.get("Room No", "")).strip()
-        room_type = str(row.get("Room Type", "")).strip()
+    cur.close()
+    conn.close()
 
-        student = {
-            "roll": roll,
-            "name": name,
-            "room": room,
-            "room_type": room_type,
-            "student_contact": str(row.get("Student Mobile No", "")),
-            "year": str(row.get("Year", "")),
-            "branch": str(row.get("Branch", "")),
-            "parent_name": str(row.get("Parent Name", "")),
-            "parent_contact": str(row.get("Parent Contact No", "")),
-            "parent_email": str(row.get("Parent Email", "")),
-            "state": str(row.get("State", "")),
-            "mentor_name": str(row.get("Mentor Name", "")),
-            "mentor_contact": str(row.get("Mobile No", "")),
-            "mentor_email": str(row.get("Mentor Email", ""))
-        }
+    students=[]
+    room_map={}
+    year_count={}
+    vacant_rooms=[]
+    vacant_beds=[]
 
-        students.append(student)
+    total_students=0
 
-        # vacant bed
-        if name == "":
-            vacant_beds.append(room)
+    for r in rows:
 
-        # group room data
-        if room not in room_data:
-            room_data[room] = {
-                "room_type": room_type,
-                "beds": []
+        roll=str(r[0] or "").replace(".0","")
+        name=str(r[1] or "")
+        student_mobile=str(r[2] or "").replace(".0","")
+        room=str(r[3] or "")
+        room_type=str(r[4] or "")
+        year=str(r[5] or "")
+        branch=str(r[6] or "")
+        parent_name=str(r[7] or "")
+        parent_contact=str(r[8] or "").replace(".0","")
+        parent_email=str(r[9] or "")
+        state=str(r[10] or "")
+        mentor_name=str(r[11] or "")
+        mentor_contact=str(r[12] or "").replace(".0","")
+        mentor_email=str(r[13] or "")
+
+        if roll and roll.lower()!="nan":
+            total_students+=1
+
+            if year and year.lower()!="nan":
+                year_count[year]=year_count.get(year,0)+1
+
+        if room not in room_map:
+            room_map[room]={
+                "type":room_type,
+                "students":0
             }
 
-        room_data[room]["beds"].append(name)
+        if name and "VACANT" not in name.upper():
+            room_map[room]["students"]+=1
 
-    # vacant room logic
-    vacant_rooms = []
-    vacant_rooms_3s = []
-    vacant_rooms_2s = []
-
-    for room, info in room_data.items():
-
-        beds = info["beds"]
-        room_type = info["room_type"]
-
-        if all(b == "" for b in beds):
-
+        if "VACANT ROOM" in name.upper():
             vacant_rooms.append(room)
 
-            if "3S" in room_type:
-                vacant_rooms_3s.append(room)
+        if "BED VACANT" in name.upper():
+            vacant_beds.append(room)
 
-            if "2S" in room_type:
-                vacant_rooms_2s.append(room)
+        student={
+            "roll":roll,
+            "name":name,
+            "student_contact":student_mobile,
+            "room":room,
+            "room_type":room_type,
+            "year":year,
+            "branch":branch,
+            "parent_name":parent_name,
+            "parent_contact":parent_contact,
+            "parent_email":parent_email,
+            "state":state,
+            "mentor_name":mentor_name,
+            "mentor_contact":mentor_contact,
+            "mentor_email":mentor_email
+        }
 
-    # total students
-    total_students = df["Roll No"].replace("", pd.NA).dropna().count()
+        match=True
 
-    # year count
-    year_count = {}
+        if query:
+            match=False
 
-    for y in df["Year"]:
-        y = str(y).strip()
+            if search_by=="roll" and query in roll.lower():
+                match=True
+            elif search_by=="room" and query in room.lower():
+                match=True
+            elif search_by=="name" and query in name.lower():
+                match=True
+            elif search_by=="state" and query in state.lower():
+                match=True
+            elif search_by=="mentor" and query in mentor_name.lower():
+                match=True
+            elif search_by=="mobile" and (
+                query in student_mobile.lower()
+                or query in parent_contact.lower()
+                or query in mentor_contact.lower()
+            ):
+                match=True
 
-        if y == "":
-            continue
+        if match:
+            students.append(student)
 
-        year_count[y] = year_count.get(y, 0) + 1
+    total_2s=0
+    total_3s=0
+    vacant_2s=0
+    vacant_3s=0
+    total_beds=0
+    occupied_beds=0
+
+    for room in room_map:
+
+        rtype=room_map[room]["type"]
+        count=room_map[room]["students"]
+
+        if rtype=="2S":
+            total_2s+=1
+            total_beds+=2
+            occupied_beds+=count
+
+            if count==0:
+                vacant_2s+=1
+
+        if rtype=="3S":
+            total_3s+=1
+            total_beds+=3
+            occupied_beds+=count
+
+            if count==0:
+                vacant_3s+=1
+
+    vacant_beds_total=total_beds-occupied_beds
+
+    occupancy=0
+    if total_beds>0:
+        occupancy=round((occupied_beds/total_beds)*100,2)
 
     return jsonify({
-        "students": students,
-        "vacant_beds": vacant_beds,
-        "vacant_rooms": vacant_rooms,
-        "vacant_rooms_3s": vacant_rooms_3s,
-        "vacant_rooms_2s": vacant_rooms_2s,
-        "total_students": int(total_students),
-        "year_count": year_count
+        "students":students,
+        "vacant_rooms":vacant_rooms,
+        "vacant_beds":vacant_beds,
+        "total_students":total_students,
+        "year_count":year_count,
+        "total_2s":total_2s,
+        "total_3s":total_3s,
+        "vacant_2s":vacant_2s,
+        "vacant_3s":vacant_3s,
+        "total_beds":total_beds,
+        "occupied_beds":occupied_beds,
+        "vacant_beds_total":vacant_beds_total,
+        "occupancy":occupancy
     })
 
 
-@app.route("/admin", methods=["GET", "POST"])
+@app.route("/admin")
 def admin():
-
-    if request.method == "POST":
-
-        password = request.form.get("password")
-
-        if password != ADMIN_PASSWORD:
-            return "Wrong Password"
-
-        file = request.files.get("file")
-
-        if not file:
-            return "No file uploaded"
-
-        file.save(EXCEL_FILE)
-
-        return "Excel Updated Successfully"
-
-    return '''
-    <h2>Upload New Excel</h2>
-
-    <form method="POST" enctype="multipart/form-data">
-
-        Password:<br>
-        <input type="password" name="password"><br><br>
-
-        Select Excel:<br>
-        <input type="file" name="file"><br><br>
-
-        <button type="submit">Upload</button>
-
-    </form>
-    '''
+    return render_template("admin.html")
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+@app.route("/upload",methods=["POST"])
+def upload():
+
+    file=request.files["file"]
+
+    df=pd.read_excel(file)
+
+    conn=get_conn()
+    cur=conn.cursor()
+
+    cur.execute("DELETE FROM students")
+
+    for _,row in df.iterrows():
+
+        cur.execute("""
+        INSERT INTO students VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """,(
+
+        str(row.get("Roll No","")).replace(".0",""),
+        row.get("Student Name",""),
+        str(row.get("Student Mobile No","")).replace(".0",""),
+        row.get("Room No",""),
+        row.get("Room Type",""),
+        row.get("Year",""),
+        row.get("Branch",""),
+        row.get("Parent Name",""),
+        str(row.get("Parent Contact No","")).replace(".0",""),
+        row.get("Parent Email",""),
+        row.get("State",""),
+        row.get("Mentor Name",""),
+        str(row.get("Mobile No","")).replace(".0",""),
+        row.get("Mentor Email","")
+
+        ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/")
+
+
+if __name__=="__main__":
+    port=int(os.environ.get("PORT",10000))
+    app.run(host="0.0.0.0",port=port)
