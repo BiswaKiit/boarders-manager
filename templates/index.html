@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-
 <html>
+
 <head>
+
 <title>Boarders Manager</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="manifest" href="/manifest.json">
@@ -10,6 +12,7 @@
 <link rel="icon" href="/icon.png">
 
 <style>
+
 body{
 font-family:Arial;
 margin:0;
@@ -124,6 +127,7 @@ cursor:pointer;
 color:red;
 font-weight:bold;
 }
+
 </style>
 
 </head>
@@ -135,18 +139,22 @@ font-weight:bold;
 <div class="search-box">
 
 <select id="searchBy">
+
 <option value="roll">Roll No</option>
 <option value="room">Room No</option>
 <option value="name">Student Name</option>
 <option value="mobile">Mobile No</option>
 <option value="state">State</option>
 <option value="mentor">Mentor Name</option>
+
 </select>
 
 <input type="text" id="searchInput" placeholder="Type here"
 onkeypress="if(event.key==='Enter'){search();}">
 
 <button onclick="search()">Search</button>
+
+<button onclick="resetSearch()">Reset</button>
 
 </div>
 
@@ -180,75 +188,58 @@ Created by: Biswa Ranjan Mishra
 </div>
 
 <div class="modal" id="popupModal">
+
 <div class="modal-content">
+
 <span class="close-btn" onclick="closePopup()">X</span>
+
 <h3 id="popupTitle"></h3>
+
 <div id="popupBody"></div>
+
 </div>
+
 </div>
 
 <script>
 
+let allStudents=[]
 let vacantRoomsList=[]
 let vacantBedsList=[]
-let allStudents=[]
 
 function loadDashboard(){
 
 fetch("/students")
+
 .then(res=>res.json())
+
 .then(data=>{
 
 allStudents=data.students
 vacantRoomsList=data.vacant_rooms
 vacantBedsList=data.vacant_beds
 
-document.getElementById("totalStudents").innerText=
-"Total Students: "+data.total_students
+document.getElementById("totalStudents").innerText =
+"Total Students: " + data.total_students
 
-// COUNT VACANT ROOMS BY TYPE
+document.getElementById("room3s").innerText =
+"3S : " + data.vacant_rooms_3s.length
 
-let rooms3s = {}
-let rooms2s = {}
+document.getElementById("room2s").innerText =
+"2S : " + data.vacant_rooms_2s.length
 
-vacantRoomsList.forEach(function(room){
-
-let student = data.students.find(function(s){
-return s.room === room
-})
-
-if(student){
-
-if(student.room_type === "3S"){
-rooms3s[room] = true
-}
-
-if(student.room_type === "2S"){
-rooms2s[room] = true
-}
-
-}
-
-})
-
-let count3s=Object.keys(rooms3s).length
-let count2s=Object.keys(rooms2s).length
-
-document.getElementById("room3s").innerText="3S : "+data.vacant_rooms_3s.length
-document.getElementById("room2s").innerText="2S : "+data.vacant_rooms_2s.length
-
-document.getElementById("vacBeds").innerText=
-"Vacant Beds: "+vacantBedsList.length
+document.getElementById("vacBeds").innerText =
+"Vacant Beds: " + data.vacant_beds.length
 
 let yearText=""
 
 for(let y in data.year_count){
-yearText+=y+" : "+data.year_count[y]+" | "
+yearText += y + " : " + data.year_count[y] + " | "
 }
 
 document.getElementById("yearStats").innerText=yearText
 
-showStudents(data.students)
+showStudents(allStudents)
 
 })
 
@@ -280,29 +271,53 @@ showStudents(filtered)
 
 }
 
+function resetSearch(){
+
+document.getElementById("searchInput").value=""
+showStudents(allStudents)
+
+}
+
 function showStudents(list){
 
 const container=document.getElementById("results")
+
 container.innerHTML=""
 
 list.forEach(function(s){
 
-container.innerHTML+=
+container.innerHTML +=
+
 "<div class='card'>"+
+
 "<div><span class='label'>Roll:</span> "+s.roll+"</div>"+
+
 "<div><span class='label'>Name:</span> "+s.name+"</div>"+
+
 "<div><span class='label'>Room:</span> "+s.room+"</div>"+
+
 "<div><span class='label'>Room Type:</span> "+s.room_type+"</div>"+
+
 "<div><span class='label'>Student Mobile:</span> "+s.student_contact+"</div>"+
+
 "<div><span class='label'>Year:</span> "+s.year+"</div>"+
+
 "<div><span class='label'>Branch:</span> "+s.branch+"</div>"+
+
 "<div><span class='label'>Parent Name:</span> "+s.parent_name+"</div>"+
+
 "<div><span class='label'>Parent Mobile:</span> "+s.parent_contact+"</div>"+
+
 "<div><span class='label'>Parent Email:</span> "+s.parent_email+"</div>"+
+
 "<div><span class='label'>State:</span> "+s.state+"</div>"+
+
 "<div><span class='label'>Mentor Name:</span> "+s.mentor_name+"</div>"+
+
 "<div><span class='label'>Mentor Mobile:</span> "+s.mentor_contact+"</div>"+
+
 "<div><span class='label'>Mentor Email:</span> "+s.mentor_email+"</div>"+
+
 "</div>"
 
 })
@@ -316,6 +331,7 @@ document.getElementById("popupTitle").innerText=title
 if(list.length===0){
 document.getElementById("popupBody").innerHTML="No data available"
 }
+
 else{
 document.getElementById("popupBody").innerHTML=list.join("<br>")
 }
