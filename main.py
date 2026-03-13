@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-EXCEL_FILE = "Student Master Export Final.xlsx"
+EXCEL_FILE = "students.xlsx"
 ADMIN_PASSWORD = "hostel@123"
 
 
