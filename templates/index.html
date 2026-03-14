@@ -1,40 +1,131 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
-<title>Hostel Boarders Manager</title>
+<title>Boarders Manager</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#003366">
+<link rel="icon" href="/icon.png">
 
 <style>
 
 body{
 font-family:Arial;
-background:#f4f6f9;
+margin:0;
+background:linear-gradient(to bottom,#e6f0ff,#ffffff);
+padding-bottom:80px;
+}
+
+h2{
 text-align:center;
-}
-
-.card{
-display:inline-block;
-padding:20px;
-margin:10px;
-background:white;
-border-radius:10px;
-box-shadow:0 2px 6px rgba(0,0,0,0.1);
-width:200px;
-}
-
-input{
+color:#003366;
 padding:10px;
-width:300px;
-margin-top:20px;
+}
+
+.search-box{
+text-align:center;
+padding:10px;
+}
+
+select,input,button{
+padding:8px;
+margin:5px;
+border-radius:8px;
+border:1px solid #ccc;
+font-size:14px;
 }
 
 button{
-padding:10px 20px;
+background:#007BFF;
+color:white;
+border:none;
 cursor:pointer;
 }
 
-#result{
-margin-top:30px;
+.dashboard{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+padding:10px;
+}
+
+.card-stat{
+background:#fff;
+padding:12px;
+border-radius:12px;
+text-align:center;
+font-weight:bold;
+box-shadow:0 3px 8px rgba(0,0,0,0.1);
+cursor:pointer;
+}
+
+.results{
+padding:10px;
+}
+
+.card{
+background:white;
+padding:12px;
+margin-bottom:12px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+.label{
+font-weight:bold;
+color:#0056b3;
+}
+
+.footer{
+position:fixed;
+bottom:0;
+width:100%;
+background:#003366;
+color:white;
+text-align:center;
+padding:12px;
+font-weight:bold;
+}
+
+.footer a{
+background:#ffc107;
+padding:6px 14px;
+margin-left:15px;
+border-radius:6px;
+text-decoration:none;
+color:black;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+justify-content:center;
+align-items:center;
+}
+
+.modal-content{
+background:white;
+padding:20px;
+border-radius:12px;
+width:80%;
+max-height:70%;
+overflow:auto;
+}
+
+.close-btn{
+float:right;
+cursor:pointer;
+color:red;
+font-weight:bold;
 }
 
 </style>
@@ -43,83 +134,229 @@ margin-top:30px;
 
 <body>
 
-<h2>Hostel Boarders Manager</h2>
+<h2>Boarders Manager</h2>
 
-<div class="card">
-<h3>Total Students</h3>
-<p id="total_students">0</p>
+<div class="search-box">
+
+<select id="searchBy">
+
+<option value="roll">Roll No</option>
+<option value="room">Room No</option>
+<option value="name">Student Name</option>
+<option value="mobile">Mobile No</option>
+<option value="state">State</option>
+<option value="mentor">Mentor Name</option>
+
+</select>
+
+<input type="text" id="searchInput" placeholder="Type here"
+onkeypress="if(event.key==='Enter'){search();}">
+
+<button onclick="search()">Search</button>
+
+
+
 </div>
 
-<div class="card">
-<h3>Vacant Beds</h3>
-<p id="vacant_beds">0</p>
+<div class="dashboard">
+
+<div class="card-stat" id="totalStudents">
+Total Students: 0
 </div>
 
-<div class="card">
-<h3>Vacant Rooms</h3>
-<p id="vacant_rooms">0</p>
+<div class="card-stat" id="vacRooms">
+Vacant Rooms<br>
+<span id="room3s">3S : 0</span><br>
+<span id="room2s">2S : 0</span>
 </div>
 
-<br>
+<div class="card-stat" id="vacBeds">
+Vacant Beds: 0
+</div>
 
-<input id="searchInput" placeholder="Enter Roll No or Name">
+<div class="card-stat" id="yearStats">
+Year Stats
+</div>
 
-<button onclick="searchStudent()">Search</button>
+</div>
 
-<div id="result"></div>
+<div class="results" id="results"></div>
+
+<div class="footer">
+Created by: Biswa Ranjan Mishra
+<a href="/admin">Admin</a>
+</div>
+
+<div class="modal" id="popupModal">
+
+<div class="modal-content">
+
+<span class="close-btn" onclick="closePopup()">X</span>
+
+<h3 id="popupTitle"></h3>
+
+<div id="popupBody"></div>
+
+</div>
+
+</div>
 
 <script>
 
-let students=[]
+let allStudents=[]
+let vacantRoomsList=[]
+let vacantBedsList=[]
+
+function loadDashboard(){
 
 fetch("/students")
+
 .then(res=>res.json())
+
 .then(data=>{
 
-students=data.students
+allStudents=data.students
+vacantRoomsList=data.vacant_rooms
+vacantBedsList=data.vacant_beds
 
-document.getElementById("total_students").innerText=data.total_students
-document.getElementById("vacant_beds").innerText=data.vacant_beds
-document.getElementById("vacant_rooms").innerText=data.vacant_rooms
+document.getElementById("totalStudents").innerText =
+"Total Students: " + data.total_students
 
-})
+document.getElementById("room3s").innerText =
+"3S : " + data.vacant_rooms_3s.length
 
+document.getElementById("room2s").innerText =
+"2S : " + data.vacant_rooms_2s.length
 
-function searchStudent(){
+document.getElementById("vacBeds").innerText =
+"Vacant Beds: " + data.vacant_beds.length
 
-let input=document.getElementById("searchInput").value.toLowerCase()
+let yearText=""
 
-let result=students.filter(s=>
-s.roll.toLowerCase().includes(input) ||
-s.name.toLowerCase().includes(input)
-)
+for(let y in data.year_count){
+yearText += y + " : " + data.year_count[y] + " | "
+}
 
-let html=""
+document.getElementById("yearStats").innerText=yearText
 
-result.forEach(s=>{
-
-html+=`
-<div class="card">
-<p><b>${s.name}</b></p>
-<p>Roll: ${s.roll}</p>
-<p>Room: ${s.room}</p>
-<p>Branch: ${s.branch}</p>
-<p>Student Mobile: ${s.student_contact}</p>
-<p>Mentor: ${s.mentor_name}</p>
-<p>Mentor Mobile: ${s.mentor_contact}</p>
-</div>
-`
+showStudents(allStudents)
 
 })
 
-document.getElementById("result").innerHTML=html
+}
+
+function search(){
+
+const searchBy=document.getElementById("searchBy").value
+const query=document.getElementById("searchInput").value.toLowerCase()
+
+let filtered=allStudents.filter(function(s){
+
+let value=""
+
+if(searchBy==="roll") value=s.roll
+if(searchBy==="room") value=s.room
+if(searchBy==="name") value=s.name
+if(searchBy==="mobile") value=s.student_contact
+if(searchBy==="state") value=s.state
+if(searchBy==="mentor") value=s.mentor_name
+
+if(!value) return false
+
+return value.toLowerCase().includes(query)
+
+})
+
+showStudents(filtered)
 
 document.getElementById("searchInput").value=""
 
 }
 
+function resetSearch(){
+
+document.getElementById("searchInput").value=""
+showStudents(allStudents)
+
+}
+
+function showStudents(list){
+
+const container=document.getElementById("results")
+
+container.innerHTML=""
+
+list.forEach(function(s){
+
+container.innerHTML +=
+
+"<div class='card'>"+
+
+"<div><span class='label'>Roll:</span> "+s.roll+"</div>"+
+
+"<div><span class='label'>Name:</span> "+s.name+"</div>"+
+
+"<div><span class='label'>Room:</span> "+s.room+"</div>"+
+
+"<div><span class='label'>Room Type:</span> "+s.room_type+"</div>"+
+
+"<div><span class='label'>Student Mobile:</span> "+s.student_contact+"</div>"+
+
+"<div><span class='label'>Year:</span> "+s.year+"</div>"+
+
+"<div><span class='label'>Branch:</span> "+s.branch+"</div>"+
+
+"<div><span class='label'>Parent Name:</span> "+s.parent_name+"</div>"+
+
+"<div><span class='label'>Parent Mobile:</span> "+s.parent_contact+"</div>"+
+
+"<div><span class='label'>Parent Email:</span> "+s.parent_email+"</div>"+
+
+"<div><span class='label'>State:</span> "+s.state+"</div>"+
+
+"<div><span class='label'>Mentor Name:</span> "+s.mentor_name+"</div>"+
+
+"<div><span class='label'>Mentor Mobile:</span> "+s.mentor_contact+"</div>"+
+
+"<div><span class='label'>Mentor Email:</span> "+s.mentor_email+"</div>"+
+
+"</div>"
+
+})
+
+}
+
+function showPopup(title,list){
+
+document.getElementById("popupTitle").innerText=title
+
+if(list.length===0){
+document.getElementById("popupBody").innerHTML="No data available"
+}
+
+else{
+document.getElementById("popupBody").innerHTML=list.join("<br>")
+}
+
+document.getElementById("popupModal").style.display="flex"
+
+}
+
+function closePopup(){
+document.getElementById("popupModal").style.display="none"
+}
+
+document.getElementById("vacRooms").onclick=function(){
+showPopup("Vacant Rooms",vacantRoomsList)
+}
+
+document.getElementById("vacBeds").onclick=function(){
+showPopup("Vacant Beds",vacantBedsList)
+}
+
+loadDashboard()
+
 </script>
 
 </body>
-
 </html>

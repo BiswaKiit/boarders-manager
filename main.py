@@ -8,6 +8,15 @@ EXCEL_FILE = "Student Master Export Final.xlsx"
 ADMIN_PASSWORD = "hostel@123"
 
 
+def clean_number(value):
+    if pd.isna(value):
+        return ""
+    text = str(value)
+    if text.endswith(".0"):
+        text = text[:-2]
+    return text
+
+
 def load_data():
 
     if not os.path.exists(EXCEL_FILE):
@@ -32,55 +41,103 @@ def students():
 
     df = load_data()
 
-    students = []
+    if df.empty:
+        return jsonify({
+            "students": [],
+            "vacant_beds": [],
+            "vacant_rooms": [],
+            "vacant_rooms_3s": [],
+            "vacant_rooms_2s": [],
+            "total_students": 0,
+            "year_count": {}
+        })
 
-    vacant_beds = 0
+    students = []
+    vacant_beds = []
+    room_data = {}
 
     for _, row in df.iterrows():
 
-        roll = str(row.get("Roll No", "")).replace(".0", "").strip()
+        roll = clean_number(row.get("Roll No", ""))
         name = str(row.get("Student Name", "")).strip()
-
-        if name.lower() == "bed vacant":
-            vacant_beds += 1
+        room = str(row.get("Room No", "")).strip()
+        room_type = str(row.get("Room Type", "")).strip()
 
         student = {
             "roll": roll,
             "name": name,
-            "room": str(row.get("Room No", "")),
-            "room_type": str(row.get("Room Type", "")),
-            "student_contact": str(row.get("Student Mobile No", "")).replace(".0",""),
+            "room": room,
+            "room_type": room_type,
+            "student_contact": clean_number(row.get("Student Mobile No", "")),
             "year": str(row.get("Year", "")),
             "branch": str(row.get("Branch", "")),
             "parent_name": str(row.get("Parent Name", "")),
-            "parent_contact": str(row.get("Parent Contact No", "")).replace(".0",""),
+            "parent_contact": clean_number(row.get("Parent Contact No", "")),
             "parent_email": str(row.get("Parent Email", "")),
             "state": str(row.get("State", "")),
             "mentor_name": str(row.get("Mentor Name", "")),
-            "mentor_contact": str(row.get("Mobile No", "")).replace(".0",""),
+            "mentor_contact": clean_number(row.get("Mobile No", "")),
             "mentor_email": str(row.get("Mentor Email", ""))
         }
 
         students.append(student)
 
+        # Vacant bed detection
+        if name.lower() == "bed vacant":
+            vacant_beds.append(room)
+
+        # Room data collection
+        if room not in room_data:
+            room_data[room] = {
+                "room_type": room_type,
+                "beds": []
+            }
+
+        room_data[room]["beds"].append(name.lower())
+
+    vacant_rooms = []
+    vacant_rooms_3s = []
+    vacant_rooms_2s = []
+
+    for room, info in room_data.items():
+
+        beds = info["beds"]
+        room_type = info["room_type"]
+
+        # room vacant if all beds = "bed vacant"
+        if all(b == "bed vacant" for b in beds):
+
+            vacant_rooms.append(room)
+
+            if room_type == "3S":
+                vacant_rooms_3s.append(room)
+
+            if room_type == "2S":
+                vacant_rooms_2s.append(room)
+
+    # Total students = Roll No present
     total_students = df["Roll No"].replace("", pd.NA).dropna().count()
 
-    room_groups = df.groupby("Room No")
+    year_count = {}
 
-    vacant_rooms = 0
+    for _, row in df.iterrows():
 
-    for room, group in room_groups:
+        roll = row.get("Roll No", "")
+        year = str(row.get("Year", "")).strip()
 
-        students_in_room = group["Student Name"].astype(str).str.lower()
+        if roll == "" or year == "":
+            continue
 
-        if (students_in_room == "bed vacant").all():
-            vacant_rooms += 1
+        year_count[year] = year_count.get(year, 0) + 1
 
     return jsonify({
         "students": students,
-        "total_students": int(total_students),
         "vacant_beds": vacant_beds,
-        "vacant_rooms": vacant_rooms
+        "vacant_rooms": vacant_rooms,
+        "vacant_rooms_3s": vacant_rooms_3s,
+        "vacant_rooms_2s": vacant_rooms_2s,
+        "total_students": int(total_students),
+        "year_count": year_count
     })
 
 
