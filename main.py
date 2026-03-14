@@ -50,39 +50,40 @@ def students():
         })
 
     students = []
-    vacant_beds = []
+vacant_beds = []
+vacant_rooms = []
+room_data = {}
 
-    # dictionary to track rooms
-    room_data = {}
+for _, row in df.iterrows():
 
-    for _, row in df.iterrows():
+    roll = clean_number(row.get("Roll No", ""))
+    name = str(row.get("Student Name", "")).strip().lower()
+    room = str(row.get("Room No", "")).strip()
 
-        roll = clean_number(row.get("Roll No", ""))
-        name = str(row.get("Student Name", "")).strip()
-        room = str(row.get("Room No", "")).strip()
+    student = {
+        "roll": roll,
+        "name": name,
+        "room": room,
+        "room_type": str(row.get("Room Type", "")),
+        "student_contact": clean_number(row.get("Student Mobile No", "")),
+        "year": str(row.get("Year", "")),
+        "branch": str(row.get("Branch", "")),
+        "parent_name": str(row.get("Parent Name", "")),
+        "parent_contact": clean_number(row.get("Parent Contact No", "")),
+        "parent_email": str(row.get("Parent Email", "")),
+        "state": str(row.get("State", "")),
+        "mentor_name": str(row.get("Mentor Name", "")),
+        "mentor_contact": clean_number(row.get("Mobile No", "")),
+        "mentor_email": str(row.get("Mentor Email", ""))
+    }
 
-        student = {
-            "roll": roll,
-            "name": name,
-            "room": room,
-            "room_type": str(row.get("Room Type", "")),
-            "student_contact": clean_number(row.get("Student Mobile No", "")),
-            "year": str(row.get("Year", "")),
-            "branch": str(row.get("Branch", "")),
-            "parent_name": str(row.get("Parent Name", "")),
-            "parent_contact": clean_number(row.get("Parent Contact No", "")),
-            "parent_email": str(row.get("Parent Email", "")),
-            "state": str(row.get("State", "")),
-            "mentor_name": str(row.get("Mentor Name", "")),
-            "mentor_contact": clean_number(row.get("Mobile No", "")),
-            "mentor_email": str(row.get("Mentor Email", ""))
-        }
+    students.append(student)
 
-        students.append(student)
+    if name == "bed vacant":
+        vacant_beds.append(room)
 
-        # Vacant bed
-        if name.lower() == "bed vacant":
-            vacant_beds.append(room)
+    if name == "vacant room":
+        vacant_rooms.append(room)
 
         # Collect room beds
         if room not in room_data:
