@@ -15,8 +15,11 @@ def load_data():
 
     df = pd.read_excel(EXCEL_FILE)
 
+    # Clean column names
     df.columns = df.columns.str.strip()
-    df.fillna("", inplace=True)
+
+    # Replace NaN with blank
+    df = df.fillna("")
 
     return df
 
@@ -31,9 +34,19 @@ def students():
 
     df = load_data()
 
+    if df.empty:
+        return jsonify({
+            "students": [],
+            "vacant_beds": [],
+            "vacant_rooms": [],
+            "vacant_rooms_3s": [],
+            "vacant_rooms_2s": [],
+            "total_students": 0,
+            "year_count": {}
+        })
+
     students = []
     vacant_beds = []
-
     room_data = {}
 
     for _, row in df.iterrows():
@@ -97,12 +110,9 @@ def students():
     year_count = {}
 
     for y in df["Year"]:
-
         y = str(y).strip()
-
         if y == "":
             continue
-
         year_count[y] = year_count.get(y, 0) + 1
 
     return jsonify({
