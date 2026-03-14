@@ -25,7 +25,6 @@ def load_data():
     df = pd.read_excel(EXCEL_FILE)
 
     df.columns = df.columns.str.strip()
-
     df = df.fillna("")
 
     return df
@@ -46,14 +45,14 @@ def students():
             "students": [],
             "vacant_beds": [],
             "vacant_rooms": [],
-            "vacant_rooms_3s": [],
-            "vacant_rooms_2s": [],
             "total_students": 0,
             "year_count": {}
         })
 
     students = []
     vacant_beds = []
+
+    # dictionary to track rooms
     room_data = {}
 
     for _, row in df.iterrows():
@@ -61,13 +60,12 @@ def students():
         roll = clean_number(row.get("Roll No", ""))
         name = str(row.get("Student Name", "")).strip()
         room = str(row.get("Room No", "")).strip()
-        room_type = str(row.get("Room Type", "")).strip()
 
         student = {
             "roll": roll,
             "name": name,
             "room": room,
-            "room_type": room_type,
+            "room_type": str(row.get("Room Type", "")),
             "student_contact": clean_number(row.get("Student Mobile No", "")),
             "year": str(row.get("Year", "")),
             "branch": str(row.get("Branch", "")),
@@ -82,42 +80,28 @@ def students():
 
         students.append(student)
 
-        # Vacant bed detection
+        # Vacant bed
         if name.lower() == "bed vacant":
             vacant_beds.append(room)
 
-        # Room data collection
+        # Collect room beds
         if room not in room_data:
-            room_data[room] = {
-                "room_type": room_type,
-                "beds": []
-            }
+            room_data[room] = []
 
-        room_data[room]["beds"].append(name.lower())
+        room_data[room].append(name.lower())
 
+    # Vacant rooms
     vacant_rooms = []
-    vacant_rooms_3s = []
-    vacant_rooms_2s = []
 
-    for room, info in room_data.items():
+    for room, beds in room_data.items():
 
-        beds = info["beds"]
-        room_type = info["room_type"]
-
-        # room vacant if all beds = "bed vacant"
         if all(b == "bed vacant" for b in beds):
-
             vacant_rooms.append(room)
 
-            if room_type == "3S":
-                vacant_rooms_3s.append(room)
-
-            if room_type == "2S":
-                vacant_rooms_2s.append(room)
-
-    # Total students = Roll No present
+    # Total students
     total_students = df["Roll No"].replace("", pd.NA).dropna().count()
 
+    # Year stats
     year_count = {}
 
     for _, row in df.iterrows():
@@ -134,8 +118,6 @@ def students():
         "students": students,
         "vacant_beds": vacant_beds,
         "vacant_rooms": vacant_rooms,
-        "vacant_rooms_3s": vacant_rooms_3s,
-        "vacant_rooms_2s": vacant_rooms_2s,
         "total_students": int(total_students),
         "year_count": year_count
     })

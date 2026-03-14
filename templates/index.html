@@ -165,9 +165,7 @@ Total Students: 0
 </div>
 
 <div class="card-stat" id="vacRooms">
-Vacant Rooms<br>
-<span id="room3s">3S : 0</span><br>
-<span id="room2s">2S : 0</span>
+Vacant Rooms: <span id="vacRoomsCount">0</span>
 </div>
 
 <div class="card-stat" id="vacBeds">
@@ -222,11 +220,8 @@ vacantBedsList=data.vacant_beds
 document.getElementById("totalStudents").innerText =
 "Total Students: " + data.total_students
 
-document.getElementById("room3s").innerText =
-"3S : " + data.vacant_rooms_3s.length
-
-document.getElementById("room2s").innerText =
-"2S : " + data.vacant_rooms_2s.length
+document.getElementById("vacRoomsCount").innerText =
+data.vacant_rooms.length
 
 document.getElementById("vacBeds").innerText =
 "Vacant Beds: " + data.vacant_beds.length
